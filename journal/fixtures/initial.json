@@ -1,0 +1,408 @@
+[
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$HOdpdOKWF5numgt9agL2YP$51FWhK7YYFvKPw6fEHnQ/abrVFejPLN1y35C6+dtsxg=",
+    "last_login": "2026-09-06T20:14:17.266Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-09-05T17:00:40.529Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$kZ1cZSWwrM2b8fNMrTOwzW$XhJLIBd4GSQQQSA2PLn+sQM7aRIsnUlilt/nklFSK5U=",
+    "last_login": "2026-09-07T09:48:05.231Z",
+    "is_superuser": true,
+    "username": "kononov.a.s@edu.mirea.ru",
+    "first_name": "Артём",
+    "last_name": "Кононов",
+    "email": "kononov.a.s@edu.mirea.ru",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-09-05T17:18:13Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "journal.group",
+  "pk": 2,
+  "fields": {
+    "slug": "bsmo",
+    "name": "БСМО-31-25",
+    "blurb": "Магистратура · очная форма",
+    "is_journal": true
+  }
+},
+{
+  "model": "journal.teacher",
+  "pk": 1,
+  "fields": {
+    "full_name": "Лебедев Артём Сергеевич",
+    "short_name": "Лебедев А. С."
+  }
+},
+{
+  "model": "journal.teacher",
+  "pk": 7,
+  "fields": {
+    "full_name": "Чебураева Александра Алексеевна",
+    "short_name": "Чебураева А. А."
+  }
+},
+{
+  "model": "journal.teacher",
+  "pk": 10,
+  "fields": {
+    "full_name": "Сачков Валерий Евгеньевич",
+    "short_name": "Сачков В.Е."
+  }
+},
+{
+  "model": "journal.teacher",
+  "pk": 11,
+  "fields": {
+    "full_name": "Ильин Дмитрий Юрьевич",
+    "short_name": "Ильин Д.Ю."
+  }
+},
+{
+  "model": "journal.teacher",
+  "pk": 12,
+  "fields": {
+    "full_name": "Котилевец Игорь Денисович",
+    "short_name": "Котилевец И.Д."
+  }
+},
+{
+  "model": "journal.teacher",
+  "pk": 13,
+  "fields": {
+    "full_name": "Иванова Ирина Алексеевна",
+    "short_name": "Иванова И.А."
+  }
+},
+{
+  "model": "journal.teacher",
+  "pk": 14,
+  "fields": {
+    "full_name": "Ксенофонтов Николай Валерьевич",
+    "short_name": "Ксенофонтов Н.В."
+  }
+},
+{
+  "model": "journal.lessonslot",
+  "pk": 1,
+  "fields": {
+    "number": 1,
+    "start_time": "09:00:00",
+    "end_time": "10:30:00"
+  }
+},
+{
+  "model": "journal.lessonslot",
+  "pk": 2,
+  "fields": {
+    "number": 2,
+    "start_time": "10:40:00",
+    "end_time": "12:10:00"
+  }
+},
+{
+  "model": "journal.lessonslot",
+  "pk": 3,
+  "fields": {
+    "number": 3,
+    "start_time": "12:40:00",
+    "end_time": "14:10:00"
+  }
+},
+{
+  "model": "journal.lessonslot",
+  "pk": 4,
+  "fields": {
+    "number": 4,
+    "start_time": "14:20:00",
+    "end_time": "15:50:00"
+  }
+},
+{
+  "model": "journal.lessonslot",
+  "pk": 5,
+  "fields": {
+    "number": 5,
+    "start_time": "16:20:00",
+    "end_time": "17:50:00"
+  }
+},
+{
+  "model": "journal.lessonslot",
+  "pk": 6,
+  "fields": {
+    "number": 6,
+    "start_time": "18:00:00",
+    "end_time": "19:30:00"
+  }
+},
+{
+  "model": "journal.lessonslot",
+  "pk": 7,
+  "fields": {
+    "number": 7,
+    "start_time": "19:40:00",
+    "end_time": "21:10:00"
+  }
+},
+{
+  "model": "journal.subject",
+  "pk": 11,
+  "fields": {
+    "name": "Облачные технологии"
+  }
+},
+{
+  "model": "journal.subject",
+  "pk": 12,
+  "fields": {
+    "name": "Системы автоматизированного развертывания"
+  }
+},
+{
+  "model": "journal.subject",
+  "pk": 13,
+  "fields": {
+    "name": "Системы оркестрации приложений"
+  }
+},
+{
+  "model": "journal.subject",
+  "pk": 14,
+  "fields": {
+    "name": "Технология высокопроизводительных вычислений"
+  }
+},
+{
+  "model": "journal.subject",
+  "pk": 15,
+  "fields": {
+    "name": "Распределенные системы и потоковая обработка данных"
+  }
+},
+{
+  "model": "journal.subject",
+  "pk": 16,
+  "fields": {
+    "name": "Организация начно-технической деятельности"
+  }
+},
+{
+  "model": "journal.lesson",
+  "pk": 44,
+  "fields": {
+    "group": 2,
+    "subject": 11,
+    "teacher": 1,
+    "date": "2026-09-07",
+    "start_time": "18:00:00",
+    "end_time": "19:30:00",
+    "lesson_type": "ПР",
+    "week_type": "Н",
+    "room": "402",
+    "location": ""
+  }
+},
+{
+  "model": "journal.lesson",
+  "pk": 45,
+  "fields": {
+    "group": 2,
+    "subject": 11,
+    "teacher": 1,
+    "date": "2026-09-07",
+    "start_time": "19:40:00",
+    "end_time": "21:10:00",
+    "lesson_type": "ПР",
+    "week_type": "Н",
+    "room": "402",
+    "location": ""
+  }
+},
+{
+  "model": "journal.lesson",
+  "pk": 46,
+  "fields": {
+    "group": 2,
+    "subject": 12,
+    "teacher": 7,
+    "date": "2026-09-08",
+    "start_time": "18:00:00",
+    "end_time": "19:30:00",
+    "lesson_type": "ПР",
+    "week_type": "Н",
+    "room": "333",
+    "location": ""
+  }
+},
+{
+  "model": "journal.lesson",
+  "pk": 47,
+  "fields": {
+    "group": 2,
+    "subject": 12,
+    "teacher": 7,
+    "date": "2026-09-08",
+    "start_time": "19:40:00",
+    "end_time": "21:10:00",
+    "lesson_type": "ПР",
+    "week_type": "Н",
+    "room": "333",
+    "location": ""
+  }
+},
+{
+  "model": "journal.lesson",
+  "pk": 48,
+  "fields": {
+    "group": 2,
+    "subject": 13,
+    "teacher": 10,
+    "date": "2026-09-09",
+    "start_time": "18:00:00",
+    "end_time": "19:30:00",
+    "lesson_type": "ЛК",
+    "week_type": "Н",
+    "room": "328",
+    "location": ""
+  }
+},
+{
+  "model": "journal.lesson",
+  "pk": 49,
+  "fields": {
+    "group": 2,
+    "subject": 13,
+    "teacher": 10,
+    "date": "2026-09-09",
+    "start_time": "19:40:00",
+    "end_time": "21:10:00",
+    "lesson_type": "ПР",
+    "week_type": "Н",
+    "room": "328",
+    "location": ""
+  }
+},
+{
+  "model": "journal.studentprofile",
+  "pk": 2,
+  "fields": {
+    "user": 2,
+    "short_name": "Кононов А.",
+    "full_name": "Кононов Артём Сергеевич",
+    "email": "kononov.a.s@edu.mirea.ru",
+    "student_code": "2561919",
+    "group": 2,
+    "pass_until": "2027-08-31",
+    "language": "Иностранный язык",
+    "curator": "Чебураева А. А."
+  }
+},
+{
+  "model": "journal.uniservice",
+  "pk": 9,
+  "fields": {
+    "slug": "lks",
+    "name": "ЛКС",
+    "description": "Личный кабинет студента: зачётная книжка, заявления и справки.",
+    "svg": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"><path d=\"M20 18h24l-2 8H22l-2-8z\"/><path d=\"M24 18c0-5 16-8 16 1\"/><circle cx=\"32\" cy=\"32\" r=\"7\"/><path d=\"M18 54c3-9 9-13 14-13s11 4 14 13\"/></svg>",
+    "order": 1
+  }
+},
+{
+  "model": "journal.uniservice",
+  "pk": 10,
+  "fields": {
+    "slug": "sdo",
+    "name": "СДО",
+    "description": "Система дистанционного обучения: курсы, задания и вебинары.",
+    "svg": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"><rect x=\"8\" y=\"18\" width=\"36\" height=\"24\" rx=\"2\"/><path d=\"M18 50h20M26 42v8\"/><path d=\"M48 14l10 6-10 6v-4h-6v-4h6v-4z\"/></svg>",
+    "order": 2
+  }
+},
+{
+  "model": "journal.uniservice",
+  "pk": 11,
+  "fields": {
+    "slug": "ibc",
+    "name": "ИБЦ",
+    "description": "Информационно-библиотечный центр: электронный каталог и бронирование.",
+    "svg": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"><path d=\"M12 16h18c8 0 12 4 12 10v26c-4-4-8-6-12-6H12V16z\"/><path d=\"M52 16H34c-8 0-12 4-12 10v26c4-4 8-6 12-6h18V16z\"/></svg>",
+    "order": 3
+  }
+},
+{
+  "model": "journal.uniservice",
+  "pk": 12,
+  "fields": {
+    "slug": "idea",
+    "name": "«Есть идея?»",
+    "description": "Площадка инициатив: предложите улучшение университета.",
+    "svg": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"><path d=\"M32 8a16 16 0 00-7 30c1 2 2 5 2 7h10c0-2 1-5 2-7a16 16 0 00-7-30z\"/><path d=\"M26 49h12M28 54h8\"/><path d=\"M26 30l5 5 9-9\"/></svg>",
+    "order": 4
+  }
+},
+{
+  "model": "journal.uniservice",
+  "pk": 13,
+  "fields": {
+    "slug": "sprav",
+    "name": "Справочник",
+    "description": "Контакты кафедр, расписание сессии и телефоны деканата.",
+    "svg": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"><rect x=\"16\" y=\"14\" width=\"32\" height=\"40\" rx=\"3\"/><path d=\"M24 10h16v8H24z\"/><path d=\"M24 32h16M24 40h12\"/><path d=\"M22 24h6\"/></svg>",
+    "order": 5
+  }
+},
+{
+  "model": "journal.uniservice",
+  "pk": 14,
+  "fields": {
+    "slug": "stud",
+    "name": "Студофис",
+    "description": "Справки, обходные листы и документы об обучении.",
+    "svg": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"><path d=\"M8 30L32 12l24 18\"/><rect x=\"14\" y=\"28\" width=\"36\" height=\"26\" rx=\"1\"/><path d=\"M28 54V38h8v16\"/><path d=\"M20 36h6v6h-6zM38 36h6v6h-6zM20 46h6v6h-6zM38 46h6v6h-6z\"/></svg>",
+    "order": 6
+  }
+},
+{
+  "model": "journal.uniservice",
+  "pk": 15,
+  "fields": {
+    "slug": "fond",
+    "name": "Фонд",
+    "description": "Стипендии, материальная помощь и гранты.",
+    "svg": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"><path d=\"M10 40c6-8 12-8 22-2 10-6 16-6 22 2\"/><path d=\"M16 44c6 10 26 10 32 0\"/><path d=\"M32 16c2 8-8 10-6 16 4-2 8-2 12 0 2-6-8-8-6-16 0-4 6-2 6 2\"/></svg>",
+    "order": 7
+  }
+},
+{
+  "model": "journal.uniservice",
+  "pk": 16,
+  "fields": {
+    "slug": "vo",
+    "name": "ВО",
+    "description": "Военный учебный центр: учёт и расписание занятий.",
+    "svg": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"><path d=\"M18 20l14-10 14 10-4 4H22l-4-4z\"/><circle cx=\"32\" cy=\"30\" r=\"7\"/><path d=\"M16 54c3-10 10-14 16-14s13 4 16 14\"/><path d=\"M46 28l8 2-2 8\"/></svg>",
+    "order": 8
+  }
+}
+]

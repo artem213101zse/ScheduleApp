@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# Django
+*.log
+local_settings.py
+staticfiles/
+media/
+
+# SQLite: живая база не в git. На сервер кладите файл в data/db.sqlite3
+# (см. docker-compose). Снимок данных — journal/fixtures/initial.json
+*.sqlite3
+*.sqlite3-journal
+
+# Secrets / OS
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.swp
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Docker volume
+data/

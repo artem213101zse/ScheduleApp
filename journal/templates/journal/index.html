@@ -1,0 +1,421 @@
+{% extends "journal/base.html" %}
+{% load static %}
+
+{% block content %}
+    <div class="app-scroll">
+        <section class="view is-active" id="view-journal">
+            <div class="svc-topbar">
+                <span>Журнал студента</span>
+                <button class="svc-user" data-go="settings">{{ student.short_name }}</button>
+            </div>
+            <div class="journal-body">
+            <div class="header">Журнал студента</div>
+
+            <div class="week-nav">
+                <button class="week-arrow" id="prevWeek" aria-label="Предыдущая неделя">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12l7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="week-title" id="weekTitle">Сентябрь 2026 – 2 неделя</div>
+                <button class="week-arrow" id="nextWeek" aria-label="Следующая неделя">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
+
+            <div class="calendar-block">
+                <div class="dows">
+                    <div class="dow">Пн</div>
+                    <div class="dow">Вт</div>
+                    <div class="dow">Ср</div>
+                    <div class="dow">Чт</div>
+                    <div class="dow">Пт</div>
+                    <div class="dow">Сб</div>
+                    <div class="dow">Вс</div>
+                </div>
+                <div class="days" id="days"></div>
+            </div>
+
+            <div class="date-pill-wrap">
+                <button class="date-pill" id="datePill">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/>
+                        <path d="M8 3.5v3M16 3.5v3M3.5 10h17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                    <span id="datePillText">Пн - 7 сентября 2026</span>
+                </button>
+            </div>
+
+            <div class="edit-bar" id="editBar">
+                <button type="button" class="edit-add" id="btnAddLesson">+ Добавить пару</button>
+            </div>
+            <div class="swipe-pane" id="journalSwipe">
+            <div class="cards" id="cards"></div>
+            </div>
+            </div>
+        </section>
+
+        <section class="view" id="view-grid">
+            <div class="svc-topbar">
+                <span>Сервисы</span>
+                <button class="svc-user" data-go="settings">{{ student.short_name }}</button>
+            </div>
+            <div class="svc-body">
+                <div class="svc-title">Сервисы</div>
+                <div class="svc-tiles">
+                    <button class="svc-tile tile-compare" id="openCompare">
+                        <svg class="tile-ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M4 10h16" stroke-linecap="round"/></svg>
+                        <svg class="wm" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                        <h3>Сравнение расписаний</h3>
+                    </button>
+                    <button class="svc-tile tile-mysched" data-sub="mysched">
+                        <svg class="tile-ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M4 10h16" stroke-linecap="round"/></svg>
+                        <svg class="wm" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                        <h3>Мои расписания</h3>
+                    </button>
+                    <button class="svc-tile tile-pass" data-sub="pass">
+                        <svg class="tile-ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h4M7 13h2.5"/><circle cx="16.5" cy="12" r="2.2"/></svg>
+                        <svg class="wm" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.2"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="16" cy="12" r="3"/></svg>
+                        <h3>Мой пропуск</h3>
+                    </button>
+                    <button class="svc-tile tile-group" data-sub="group">
+                        <svg class="tile-ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"><path d="M5 8h14M5 12h14M5 16h10"/></svg>
+                        <svg class="wm" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h12"/></svg>
+                        <h3>Учебная группа</h3>
+                    </button>
+                    <button class="svc-tile tile-disc" data-sub="disc">
+                        <svg class="tile-ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8l4 4-4 4"/></svg>
+                        <svg class="wm" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.3"><path d="M9 6l7 6-7 6"/></svg>
+                        <h3>Дисциплины</h3>
+                    </button>
+                    <button class="svc-tile tile-proj" data-sub="proj">
+                        <svg class="tile-ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="8.5" cy="8.2" r="2.2"/><circle cx="15.5" cy="8.2" r="2.2"/><path d="M4.5 16.5c.8-3 2.6-4.4 4-4.4s3.2 1.4 4 4.4M11.5 16.5c.8-3 2.6-4.4 4-4.4s3.2 1.4 4 4.4"/></svg>
+                        <svg class="wm" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.1"><path d="M4 12h16M12 4v16M7 7l10 10M17 7L7 17"/></svg>
+                        <h3>Проектная зона</h3>
+                    </button>
+                    <button class="svc-tile tile-map" data-sub="map">
+                        <svg class="tile-ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 21s7-6.2 7-11.2A7 7 0 105 9.8C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.1"/></svg>
+                        <svg class="wm" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.2"><path d="M12 21s7-6.2 7-11.2A7 7 0 105 9.8C5 14.8 12 21 12 21z"/></svg>
+                        <h3>Карта</h3>
+                    </button>
+                </div>
+
+                <div class="sec-label">Цифровой университет</div>
+                <button class="role-select" id="roleSelect">
+                    <span id="roleLabel">Студент</span>
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="uni-grid" id="uniGrid"></div>
+            </div>
+        </section>
+
+        <section class="view" id="view-compare">
+            <div class="svc-topbar">
+                <div class="svc-crumb">
+                    <button type="button" id="crumbServices">Сервисы</button>
+                    <span> / Сравнение расписаний</span>
+                </div>
+                <button class="svc-user" data-go="settings">{{ student.short_name }}</button>
+            </div>
+            <div class="cmp-head">
+                <button class="back-btn" id="compareBack" aria-label="Назад">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12l7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <h1>Сравнение расписаний</h1>
+                <button class="cal-btn" id="openMySched" aria-label="Мои расписания">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3.5v3M16 3.5v3M4 10h16" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <button class="group-row" id="groupRow">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="M16 16.5L20 20.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <span id="groupName">{{ bootstrap.journal_group_name }}</span>
+            </button>
+            <div class="cmp-body">
+                <div class="week-nav">
+                    <button class="week-arrow" id="cmpPrevWeek" aria-label="Предыдущая неделя">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12l7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <div class="week-title" id="cmpWeekTitle">Сентябрь 2026 – 2 неделя</div>
+                    <button class="week-arrow" id="cmpNextWeek" aria-label="Следующая неделя">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
+                <div class="calendar-block">
+                    <div class="dows">
+                        <div class="dow">Пн</div>
+                        <div class="dow">Вт</div>
+                        <div class="dow">Ср</div>
+                        <div class="dow">Чт</div>
+                        <div class="dow">Пт</div>
+                        <div class="dow">Сб</div>
+                        <div class="dow">Вс</div>
+                    </div>
+                    <div class="days cmp-days" id="cmpDays"></div>
+                </div>
+                <div class="date-pill-wrap">
+                    <button class="date-pill" id="cmpDatePill">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/>
+                            <path d="M8 3.5v3M16 3.5v3M3.5 10h17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        </svg>
+                        <span id="cmpDateText">Вт - 8 сентября 2026</span>
+                    </button>
+                </div>
+                <div class="week-type" id="cmpWeekType">2 неделя</div>
+                <div class="swipe-pane" id="compareSwipe">
+                <div class="timeline" id="timeline">
+                    <div class="tl-hours" id="tlHours"></div>
+                    <div class="tl-track" id="tlTrack"></div>
+                    <div class="now-line" id="nowLine">
+                        <span class="now-tri"></span>
+                        <span class="now-bar"></span>
+                        <span class="now-time" id="nowTimeLabel"></span>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="view" id="view-sub">
+            <div class="svc-topbar">
+                <span id="subCrumb">Сервисы</span>
+                <button class="svc-user" data-go="settings">{{ student.short_name }}</button>
+            </div>
+            <div class="sub-head">
+                <button class="back-btn" id="subBack" aria-label="Назад">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12l7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <h1 id="subTitle">Сервис</h1>
+            </div>
+            <div class="sub-body" id="subBody"></div>
+        </section>
+
+        <section class="view" id="view-stats">
+            <div class="page-head">Успеваемость</div>
+            <div class="stack" id="grades"></div>
+        </section>
+
+        <section class="view" id="view-settings">
+            <div class="svc-topbar">
+                <span>Настройки</span>
+                <button class="svc-user" type="button">{{ student.short_name }}</button>
+            </div>
+            <div class="set-body">
+                <div class="set-name">{{ student.full_name }}</div>
+                <a class="set-mail" href="mailto:{{ student.email }}">{{ student.email }}</a>
+                <div class="set-actions">
+                    <button class="set-btn set-btn-out" id="btnLogout">Выйти из аккаунта</button>
+                    <button class="set-btn" id="btnGuide">Инструкция</button>
+                    <button class="set-bell" id="btnBell" aria-label="Уведомления">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 9a6 6 0 1112 0c0 7 2 7 2 9H4c0-2 2-2 2-9"/><path d="M10 20a2 2 0 004 0"/></svg>
+                    </button>
+                </div>
+
+                <button class="abs-card" id="btnAbsences">
+                    <div class="abs-top">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="3.5" width="12" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/><circle cx="16.5" cy="16.5" r="3.2"/><path d="M16.5 15.3v1.4l.9.5"/></svg>
+                        <strong>Уважительные отсутствия</strong>
+                        <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="abs-label">Шифр студента</div>
+                    <div class="abs-val">{{ student.student_code }}</div>
+                    <div class="abs-label">Последнее отсутствие</div>
+                    <div class="abs-val">30.04.2026 18:00 - 30.04.2026 23:59</div>
+                </button>
+
+                <h2 class="set-h">Обучение</h2>
+                <button class="set-link" id="btnLang">Иностранный язык</button>
+
+                <h2 class="set-h">Контакты</h2>
+                <p class="set-p">При возникновении проблем во время использования сервиса вы можете связаться с командой разработки. Пожалуйста, сообщите базовую информацию о себе, учебную группу или должность.</p>
+                <a class="set-mail" href="mailto:attendance@mirea.ru">attendance@mirea.ru</a>
+                <p class="set-p">Сервис разработан в Центре молодежного техноковоркинга РТУ МИРЭА</p>
+                <div class="set-actions">
+                    <button class="set-btn" id="btnVk">
+                        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" fill="#4c75a3"/><path fill="#fff" d="M13.2 16.5h-1.3s-2.8-3.3-3.3-4.4c-.2-.4 0-.6.2-.7.5-.4 1.1 0 1.1 0l2.1 1.5s.3.2.5 0l4.6-5s.3-.4.6-.3c.3 0 .2.4.2.4l-3.8 8.2s-.2.4-.6.3z"/></svg>
+                        Группа Вконтакте
+                    </button>
+                    <button class="set-btn" id="btnTg">
+                        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" fill="#2aabee"/><path fill="#fff" d="M9.6 13.6l-.3 3.2s.4 0 .8-.4c.3-.3 1.7-1.6 1.7-1.6l3.6 2.6s.6.3.9-.1c.2-.3.2-1.3.2-1.3L18 8.4s.1-.8-.7-.5L6.8 12s-.8.3-.1.6l2.9 1z"/></svg>
+                        Чат в Telegram
+                    </button>
+                </div>
+
+                <h2 class="set-h">Приложение</h2>
+                <div class="set-sub">Тема оформления</div>
+                <div class="theme-seg" id="themeSeg">
+                    <button type="button" data-theme="light" class="is-on">Светлая</button>
+                    <button type="button" data-theme="dark">Тёмная</button>
+                    <button type="button" data-theme="system">Системная</button>
+                </div>
+
+                <div class="set-sub" id="quickTitle">Быстрый доступ</div>
+                <p class="set-hint">Выберите сервис для быстрого перехода в панели навигации.</p>
+                <button class="role-select" id="quickAccess">
+                    <span id="quickLabel">Сравнение расписаний</span>
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="secret-edit" id="secretEdit">
+                    <div class="secret-row">
+                        <span style="font-size:13px;color:#888">Редактор расписания</span>
+                        <div class="switch off" id="editSwitch"></div>
+                    </div>
+                    <input type="password" id="editPassword" placeholder="Пароль служебного режима" autocomplete="off">
+                    <p class="secret-hint" id="editStatus"></p>
+                    <a class="set-btn" href="/admin/" style="margin-top:10px;display:inline-flex;width:100%;justify-content:center">Админка Django</a>
+                </div>
+                <p class="secret-hint" id="quickUnlockHint"> </p>
+
+                <div class="ver-block">
+                    <div class="ver-line">Версия приложения: 1.9.0+9478</div>
+                    <div class="ver-ok">Актуальная версия</div>
+                </div>
+                <div class="ver-block">
+                    <div class="ver-line">Версия android приложения: 2.1.0+253</div>
+                    <div class="ver-ok">Актуальная версия</div>
+                </div>
+                <button class="set-btn" id="btnChangelog">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+                    История изменений
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <button class="fab" id="fab" aria-label="QR-код">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zM13 3h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5z"/>
+            <path d="M13 13h3v2h-1v1h-2v-3zm5 0h3v3h-2v-1h-1v-2zm-2 3h2v2h-2v-2zm-3 2h3v3h-3v-3zm5 1h1v1h2v2h-3v-3zm3-1h2v5h-2v-5z"/>
+        </svg>
+    </button>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn is-active" data-view="journal" aria-label="Журнал">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="3" width="12" height="18" rx="2.6"/><rect x="8.4" y="6.1" width="7.2" height="1.8" rx="0.9" fill="#fff"/></svg>
+        </button>
+        <button class="nav-btn" data-view="grid" aria-label="Сервисы">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <rect x="4.2" y="4.2" width="6" height="6" rx="1.2"/>
+                <rect x="13.8" y="4.2" width="6" height="6" rx="1.2"/>
+                <rect x="4.2" y="13.8" width="6" height="6" rx="1.2"/>
+                <rect x="13.8" y="13.8" width="6" height="6" rx="1.2"/>
+            </svg>
+        </button>
+        <button class="nav-btn" data-view="compare" aria-label="Сравнение расписаний">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="4" y="5" width="16" height="15" rx="2"/>
+                <path d="M8 3.5v3M16 3.5v3M4 10h16" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <button class="nav-btn" data-view="settings" aria-label="Настройки">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 00-.6.22L2.71 8.84a.5.5 0 00.12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 00-.12.64l1.92 3.32c.14.24.42.34.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.25.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.09.46 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/>
+            </svg>
+        </button>
+    </nav>
+
+<div class="overlay" id="dateOverlay">
+    <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h2>Выбор даты</h2>
+        <div class="picker-nav">
+            <button class="week-arrow" id="prevMonth">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12l7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <strong id="pickerMonth"></strong>
+            <button class="week-arrow" id="nextMonth">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+        <div class="picker-grid" id="pickerGrid"></div>
+    </div>
+</div>
+
+<div class="overlay" id="qrOverlay">
+    <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h2>QR-код посещения</h2>
+        <div class="qr-box">
+            <div class="qr-frame">
+                <img alt="QR" id="qrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=186x186&margin=8&data=student-journal-2026-09-07">
+            </div>
+            <p>Покажите код преподавателю,<br>чтобы отметиться на паре</p>
+        </div>
+        <button class="close-btn" id="closeQr">Закрыть</button>
+    </div>
+</div>
+
+<div class="overlay" id="groupOverlay">
+    <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h2>Выбор расписания</h2>
+        <div id="groupList"></div>
+    </div>
+</div>
+
+<div class="overlay" id="roleOverlay">
+    <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h2>Роль</h2>
+        <div id="roleList"></div>
+    </div>
+</div>
+
+<div class="overlay" id="infoOverlay">
+    <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="infoTitle"></h2>
+        <div id="infoBody"></div>
+        <button class="close-btn" id="infoClose">Закрыть</button>
+    </div>
+</div>
+
+<div class="tip-catch" id="tipCatch"></div>
+<div class="lesson-tip" id="lessonTip">
+    <div class="lesson-tip-card">
+        <div class="t-title" id="tipTitle"></div>
+        <div class="t-time" id="tipTime"></div>
+        <div class="t-loc" id="tipLoc"></div>
+        <div class="t-teacher" id="tipTeacher"></div>
+    </div>
+    <div class="lesson-tip-arrow"></div>
+</div>
+
+<div class="overlay" id="lessonOverlay">
+    <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="lessonFormTitle">Пара</h2>
+        <form class="edit-form" id="lessonForm">
+            <input type="hidden" id="lessonId">
+            <label class="login-label">Дисциплина</label>
+            <input class="login-input" id="fSubject" list="subjectList" required>
+            <datalist id="subjectList"></datalist>
+            <label class="login-label">Тип</label>
+            <select class="login-input" id="fType">
+                <option value="ПР">ПР — практика</option>
+                <option value="ЛК">ЛК — лекция</option>
+                <option value="ЛБ">ЛБ — лабораторная</option>
+                <option value="СМ">СМ — семинар</option>
+            </select>
+            <label class="login-label">Пара</label>
+            <select class="login-input" id="fSlot" required></select>
+            <label class="login-label">Аудитория</label>
+            <input class="login-input" id="fRoom" placeholder="402">
+            <label class="login-label">Отметка</label>
+            <select class="login-input" id="fWeek">
+                <option value="Н">Н — отсутствие</option>
+                <option value="+">+ — присутствие</option>
+            </select>
+            <label class="login-label">Преподаватель</label>
+            <input class="login-input" id="fTeacher" list="teacherList" required>
+            <datalist id="teacherList"></datalist>
+            <button class="close-btn" type="submit">Сохранить</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% csrf_token %}
+{{ bootstrap|json_script:"bootstrap-data" }}
+<script src="{% static 'journal/app.js' %}"></script>
+{% endblock %}

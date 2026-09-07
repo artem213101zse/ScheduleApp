@@ -1,0 +1,40 @@
+{% extends "journal/base.html" %}
+
+{% block title %}Вход{% endblock %}
+
+{% block content %}
+<div class="svc-topbar">
+    <span>Вход</span>
+    <a class="svc-user" href="{% url 'journal:login' %}">Войти</a>
+</div>
+<div class="guest-body">
+    <h1>Вход в систему</h1>
+    <p>Войдите при помощи аккаунта РТУ МИРЭА</p>
+    <a class="guest-primary" href="{% url 'journal:login' %}">Войти</a>
+    <a class="guest-secondary" href="{% url 'journal:instruction' %}">Ознакомиться с инструкцией</a>
+</div>
+<nav class="bottom-nav">
+    <a class="nav-btn" href="{% url 'journal:index' %}" aria-label="Журнал">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="3" width="12" height="18" rx="2.6"/><rect x="8.4" y="6.1" width="7.2" height="1.8" rx="0.9" fill="#fff"/></svg>
+    </a>
+    <a class="nav-btn" href="{% url 'journal:login' %}" aria-label="Сервисы">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+            <rect x="4.2" y="4.2" width="6" height="6" rx="1.2"/>
+            <rect x="13.8" y="4.2" width="6" height="6" rx="1.2"/>
+            <rect x="4.2" y="13.8" width="6" height="6" rx="1.2"/>
+            <rect x="13.8" y="13.8" width="6" height="6" rx="1.2"/>
+        </svg>
+    </a>
+    <a class="nav-btn" href="{% url 'journal:login' %}" aria-label="Сравнение расписаний">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="4" y="5" width="16" height="15" rx="2"/>
+            <path d="M8 3.5v3M16 3.5v3M4 10h16" stroke-linecap="round"/>
+        </svg>
+    </a>
+    <a class="nav-btn" href="{% url 'journal:login' %}" aria-label="Настройки">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 00-.6.22L2.71 8.84a.5.5 0 00.12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 00-.12.64l1.92 3.32c.14.24.42.34.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.25.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.09.46 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/>
+        </svg>
+    </a>
+</nav>
+{% endblock %}

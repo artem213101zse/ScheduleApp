@@ -1,0 +1,16 @@
+{% extends "journal/base.html" %}
+
+{% block title %}Инструкция{% endblock %}
+
+{% block content %}
+<div class="svc-topbar">
+    <a class="svc-crumb" href="{% url 'journal:index' %}">Назад</a>
+    <span class="svc-user">Инструкция</span>
+</div>
+<div class="guest-body" style="align-items:flex-start;text-align:left;padding-top:24px">
+    <h1 style="width:100%">Как пользоваться</h1>
+    <p style="text-align:left;max-width:none">Войдите корпоративной почтой РТУ МИРЭА. В журнале отображаются пары выбранного дня. В сервисах доступно сравнение расписаний. QR-кнопка отмечает посещение.</p>
+    <p style="text-align:left;max-width:none">При проблемах напишите на attendance@mirea.ru и укажите группу.</p>
+    <a class="guest-primary" href="{% url 'journal:login' %}">Войти</a>
+</div>
+{% endblock %}

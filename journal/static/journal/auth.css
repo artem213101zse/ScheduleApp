@@ -1,0 +1,297 @@
+.guest-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    padding: 72px 28px 24px;
+}
+
+.guest-body h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    margin-bottom: 12px;
+}
+
+.guest-body p {
+    font-size: 15px;
+    color: #666;
+    line-height: 1.4;
+    margin-bottom: 28px;
+    max-width: 280px;
+}
+
+.guest-primary,
+.guest-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 280px;
+    height: 46px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.guest-primary {
+    background: var(--accent);
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.guest-secondary {
+    border: 1px solid #e0e0e0;
+    color: #333;
+    background: #fff;
+}
+
+.bottom-nav a.nav-btn {
+    text-decoration: none;
+}
+
+.login-page {
+    min-height: 100%;
+    padding: 48px 24px 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.login-logo {
+    font-size: 36px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: #4b8ef5;
+    margin: 8px 0 36px;
+    font-family: "Roboto", sans-serif;
+}
+
+.login-form { display: flex; flex-direction: column; }
+
+.login-label {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 6px;
+}
+
+.login-input {
+    width: 100%;
+    height: 48px;
+    border: 1px solid #d8d8d8;
+    border-radius: 12px;
+    padding: 0 14px;
+    font-size: 16px;
+    margin-bottom: 16px;
+    background: #fff;
+}
+
+.login-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(61, 139, 255, 0.15);
+}
+
+.login-pass-wrap {
+    position: relative;
+}
+
+.login-pass-wrap .login-input {
+    padding-right: 44px;
+}
+
+.pass-eye {
+    position: absolute;
+    right: 8px;
+    top: 12px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    color: #888;
+}
+
+.pass-eye svg { width: 22px; height: 22px; }
+
+.login-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+    margin: 4px 0 10px;
+}
+
+.login-check input { width: 16px; height: 16px; }
+
+.login-forgot {
+    align-self: flex-start;
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.login-error {
+    color: #e53935;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.login-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.login-submit {
+    flex: 1;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.login-qr {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 48px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.login-key {
+    width: 100%;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #dbeafe, #bfdbfe);
+    color: #2563eb;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.login-help {
+    margin-top: auto;
+    align-self: flex-end;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 24px 0 8px;
+}
+
+.help-ico {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.6px solid var(--accent);
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.secret-edit {
+    display: none;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px dashed #e0e0e0;
+    border-radius: 12px;
+}
+
+.secret-edit.is-open { display: block; }
+
+.secret-edit .secret-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.secret-edit input[type="password"] {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 0 12px;
+    margin-top: 10px;
+}
+
+.secret-hint {
+    font-size: 11px;
+    color: #ccc;
+    margin-top: 8px;
+    user-select: none;
+}
+
+.edit-bar {
+    display: none;
+    margin: 4px 0 12px;
+}
+
+.edit-bar.is-on { display: block; }
+
+.edit-add {
+    width: 100%;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px dashed var(--accent);
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 600;
+    background: #f4f8ff;
+}
+
+.card { position: relative; }
+
+.card-edit {
+    display: none;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.edit-bar.is-on ~ .cards .card-edit,
+.cards.is-editing .card-edit {
+    display: flex;
+}
+
+.card-edit button {
+    flex: 1;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.card-edit .ed {
+    background: #e8f1fe;
+    color: var(--accent);
+}
+
+.card-edit .del {
+    background: #fdecea;
+    color: #e53935;
+}
+
+.edit-form .login-label { margin-top: 4px; }
+.edit-form select.login-input {
+    appearance: none;
+    background: #fff;
+}

@@ -1,0 +1,77 @@
+{% extends "journal/base.html" %}
+
+{% block title %}Вход — РТУ МИРЭА{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-logo">РТУ МИРЭА</div>
+    <form method="post" action="{% url 'journal:login' %}" class="login-form" autocomplete="on">
+        {% csrf_token %}
+        <label class="login-label" for="id_email">E-mail</label>
+        <input class="login-input" id="id_email" type="email" name="email" value="{{ email }}" required autofocus>
+
+        <label class="login-label" for="id_password">Пароль</label>
+        <div class="login-pass-wrap">
+            <input class="login-input" id="id_password" type="password" name="password" required>
+            <button class="pass-eye" type="button" id="togglePass" aria-label="Показать пароль">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+        </div>
+
+        <label class="login-check">
+            <input type="checkbox" name="remember">
+            <span>Запомнить меня</span>
+        </label>
+
+        <button class="login-forgot" type="button" id="forgotBtn">Забыли пароль?</button>
+
+        {% if error %}
+        <div class="login-error">{{ error }}</div>
+        {% endif %}
+
+        <div class="login-row">
+            <button class="login-submit" type="submit">Войти</button>
+            <button class="login-qr" type="button" id="loginQr">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                    <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zM13 3h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5z"/>
+                    <path d="M13 13h3v2h-1v1h-2v-3zm5 0h3v3h-2v-1h-1v-2zm-2 3h2v2h-2v-2zm-3 2h3v3h-3v-3zm5 1h1v1h2v2h-3v-3zm3-1h2v5h-2v-5z"/>
+                </svg>
+                QR-код
+            </button>
+        </div>
+        <button class="login-key" type="button" id="loginKey">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="18" height="18">
+                <path d="M12 13v4M8.5 12.5V16M15.5 12.5V16M6.5 11.5c0 3 2 6.5 5.5 8.5 3.5-2 5.5-5.5 5.5-8.5"/>
+                <path d="M9 10.5c0-1.7 1.3-3 3-3s3 1.3 3 3"/>
+                <path d="M7.5 9.5c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5"/>
+            </svg>
+            Ключ доступа
+        </button>
+    </form>
+    <a class="login-help" href="mailto:attendance@mirea.ru">
+        <span class="help-ico">?</span>
+        Поддержка
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById("togglePass").addEventListener("click", function () {
+        var input = document.getElementById("id_password");
+        input.type = input.type === "password" ? "text" : "password";
+    });
+    function soon(title, text) {
+        alert(text);
+    }
+    document.getElementById("forgotBtn").addEventListener("click", function () {
+        soon("Пароль", "Для восстановления пароля напишите в студофис или на attendance@mirea.ru");
+    });
+    document.getElementById("loginQr").addEventListener("click", function () {
+        soon("QR", "Вход по QR-коду будет доступен в следующей версии");
+    });
+    document.getElementById("loginKey").addEventListener("click", function () {
+        soon("Ключ", "Вход по ключу доступа (отпечаток) доступен только в мобильном приложении");
+    });
+</script>
+{% endblock %}
