@@ -48,6 +48,13 @@ class LessonSlot(models.Model):
 
 class Subject(models.Model):
     name = models.CharField(max_length=160)
+    teachers = models.ManyToManyField(
+        Teacher,
+        blank=True,
+        related_name="subjects",
+        verbose_name="Преподаватели",
+        help_text="Кто ведёт дисциплину (лектор, практик и т.д.)",
+    )
 
     class Meta:
         verbose_name = "Дисциплина"

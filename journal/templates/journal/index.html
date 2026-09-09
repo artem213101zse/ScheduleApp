@@ -387,8 +387,7 @@
         <form class="edit-form" id="lessonForm">
             <input type="hidden" id="lessonId">
             <label class="login-label">Дисциплина</label>
-            <input class="login-input" id="fSubject" list="subjectList" required>
-            <datalist id="subjectList"></datalist>
+            <select class="login-input" id="fSubject" required></select>
             <label class="login-label">Тип</label>
             <select class="login-input" id="fType">
                 <option value="ПР">ПР — практика</option>
@@ -406,9 +405,18 @@
                 <option value="+">+ — присутствие</option>
             </select>
             <label class="login-label">Преподаватель</label>
-            <input class="login-input" id="fTeacher" list="teacherList" required>
-            <datalist id="teacherList"></datalist>
+            <select class="login-input" id="fTeacher" required></select>
             <button class="close-btn" type="submit">Сохранить</button>
+            <button class="set-btn" type="button" id="btnCopyToggle" style="margin-top:10px;width:100%;justify-content:center">Копировать пару</button>
+            <div id="copyBox" class="copy-box">
+                <p class="copy-hint">Такая же пара появится в выбранный день. Текущая не изменится.</p>
+                <label class="login-label">День</label>
+                <input class="login-input" id="fCopyDate" type="date">
+                <label class="login-label">Пара</label>
+                <select class="login-input" id="fCopySlot"></select>
+                <button class="close-btn" type="button" id="btnCopyGo">Вставить копию</button>
+                <p class="copy-status" id="copyStatus"></p>
+            </div>
         </form>
     </div>
 </div>

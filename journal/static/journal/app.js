@@ -753,21 +753,113 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
         });
     });
 
-    (function fillLists() {
-        var sl = document.getElementById("subjectList");
-        var tl = document.getElementById("teacherList");
-        if (sl) sl.innerHTML = (BOOT.subjects || []).map(function (s) { return "<option value=\"" + s.name + "\">"; }).join("");
-        if (tl) tl.innerHTML = (BOOT.teachers || []).map(function (t) { return "<option value=\"" + t.short_name + "\">"; }).join("");
-        var slotSel = document.getElementById("fSlot");
+    function slotOptionsHtml() {
         var slots = BOOT.slots || [];
-        if (slotSel) {
-            slotSel.innerHTML = slots.map(function (s) {
-                return '<option value="' + s.start + "|" + s.end + '">' + s.label + "</option>";
-            }).join("");
-            if (!slots.length) {
-                slotSel.innerHTML = '<option value="18:00|19:30">6 пара: 18:00 – 19:30</option><option value="19:40|21:10">7 пара: 19:40 – 21:10</option>';
-            }
+        if (!slots.length) {
+            return '<option value="18:00|19:30">6 пара: 18:00 – 19:30</option><option value="19:40|21:10">7 пара: 19:40 – 21:10</option>';
         }
+        return slots.map(function (s) {
+            return '<option value="' + s.start + "|" + s.end + '">' + s.label + "</option>";
+        }).join("");
+    }
+
+    function pickSlot(sel, want) {
+        if (!sel) return;
+        var found = false;
+        for (var i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === want) { found = true; break; }
+        }
+        if (found) sel.value = want;
+        else if (sel.options.length) sel.value = sel.options[Math.min(5, sel.options.length - 1)].value;
+    }
+
+    function findSubject(item) {
+        if (!item) return null;
+        if (item.subject_id) {
+            return (BOOT.subjects || []).find(function (s) { return String(s.id) === String(item.subject_id); }) || null;
+        }
+        return (BOOT.subjects || []).find(function (s) { return s.name === item.subject; }) || null;
+    }
+
+    function findTeacher(item) {
+        if (!item) return null;
+        if (item.teacher_id) {
+            return (BOOT.teachers || []).find(function (t) { return String(t.id) === String(item.teacher_id); }) || null;
+        }
+        return (BOOT.teachers || []).find(function (t) { return t.short_name === item.teacher; }) || null;
+    }
+
+    function fillSubjectSelect(preferredId) {
+        var sel = document.getElementById("fSubject");
+        if (!sel) return;
+        var list = BOOT.subjects || [];
+        sel.innerHTML = '<option value="">Выберите дисциплину</option>' + list.map(function (s) {
+            return '<option value="' + s.id + '">' + s.name + "</option>";
+        }).join("");
+        if (preferredId) sel.value = String(preferredId);
+    }
+
+    function fillTeacherSelect(subjectId, preferredId) {
+        var sel = document.getElementById("fTeacher");
+        if (!sel) return;
+        var subj = (BOOT.subjects || []).find(function (s) { return String(s.id) === String(subjectId); });
+        var list = (subj && subj.teachers && subj.teachers.length) ? subj.teachers : [];
+        if (!list.length) list = BOOT.teachers || [];
+        var html = "";
+        if (list.length !== 1) html += '<option value="">Выберите преподавателя</option>';
+        var seen = {};
+        list.forEach(function (t) {
+            seen[String(t.id)] = true;
+            html += '<option value="' + t.id + '">' + t.short_name + "</option>";
+        });
+        if (preferredId && !seen[String(preferredId)]) {
+            var extra = (BOOT.teachers || []).find(function (t) { return String(t.id) === String(preferredId); });
+            if (extra) html += '<option value="' + extra.id + '">' + extra.short_name + "</option>";
+        }
+        sel.innerHTML = html;
+        if (preferredId) sel.value = String(preferredId);
+        else if (list.length === 1) sel.value = String(list[0].id);
+        else sel.value = "";
+    }
+
+    function rememberSubjectTeacher(subjectId, teacherId, teacherName) {
+        if (!subjectId || !teacherId) return;
+        var s = (BOOT.subjects || []).find(function (x) { return String(x.id) === String(subjectId); });
+        if (!s) return;
+        s.teachers = s.teachers || [];
+        if (!s.teachers.some(function (t) { return String(t.id) === String(teacherId); })) {
+            s.teachers.push({ id: Number(teacherId), short_name: teacherName, full_name: teacherName });
+        }
+    }
+
+    function formLessonPayload(dateStr, slotVal) {
+        var slot = (slotVal || document.getElementById("fSlot").value || "18:00|19:30").split("|");
+        var subSel = document.getElementById("fSubject");
+        var teaSel = document.getElementById("fTeacher");
+        var subText = (subSel.selectedIndex >= 0 && subSel.value) ? subSel.options[subSel.selectedIndex].text : "";
+        var teaText = (teaSel.selectedIndex >= 0 && teaSel.value) ? teaSel.options[teaSel.selectedIndex].text : "";
+        return {
+            date: dateStr,
+            subject_id: subSel.value,
+            subject: subText,
+            type: document.getElementById("fType").value,
+            start: slot[0],
+            end: slot[1],
+            room: document.getElementById("fRoom").value,
+            week: document.getElementById("fWeek").value,
+            teacher_id: teaSel.value,
+            teacher: teaText
+        };
+    }
+
+    (function fillLists() {
+        var html = slotOptionsHtml();
+        var slotSel = document.getElementById("fSlot");
+        var copySlot = document.getElementById("fCopySlot");
+        if (slotSel) slotSel.innerHTML = html;
+        if (copySlot) copySlot.innerHTML = html;
+        fillSubjectSelect("");
+        fillTeacherSelect("", "");
     })();
 
     var unlockClicks = 0;
@@ -818,22 +910,63 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
     function openLessonForm(item) {
         document.getElementById("lessonFormTitle").textContent = item ? "Изменить пару" : "Новая пара";
         document.getElementById("lessonId").value = item ? item.id : "";
-        document.getElementById("fSubject").value = item ? item.subject : "";
+        var subj = findSubject(item);
+        var teach = findTeacher(item);
+        fillSubjectSelect(subj ? subj.id : "");
+        fillTeacherSelect(subj ? subj.id : "", teach ? teach.id : "");
         document.getElementById("fType").value = item ? item.type : "ПР";
-        var slotSel = document.getElementById("fSlot");
         var want = item && item.start && item.end ? (item.start + "|" + item.end) : "18:00|19:30";
-        if (slotSel) {
-            var found = false;
-            for (var i = 0; i < slotSel.options.length; i++) {
-                if (slotSel.options[i].value === want) { found = true; break; }
-            }
-            slotSel.value = found ? want : (slotSel.options.length ? slotSel.options[Math.min(5, slotSel.options.length - 1)].value : want);
-        }
+        pickSlot(document.getElementById("fSlot"), want);
         document.getElementById("fRoom").value = item ? (item.room || "") : "";
         document.getElementById("fWeek").value = item ? (item.week === "В" ? "+" : item.week) : "Н";
-        document.getElementById("fTeacher").value = item ? item.teacher : "";
+        var box = document.getElementById("copyBox");
+        if (box) box.classList.remove("is-open");
+        var copySt = document.getElementById("copyStatus");
+        if (copySt) copySt.textContent = "";
+        var copyDate = document.getElementById("fCopyDate");
+        if (copyDate) copyDate.value = iso(selected);
+        pickSlot(document.getElementById("fCopySlot"), want);
         document.getElementById("lessonOverlay").classList.add("is-open");
     }
+
+    document.getElementById("fSubject").addEventListener("change", function () {
+        fillTeacherSelect(this.value, "");
+    });
+
+    document.getElementById("btnCopyToggle").addEventListener("click", function () {
+        var box = document.getElementById("copyBox");
+        box.classList.toggle("is-open");
+        if (box.classList.contains("is-open")) {
+            document.getElementById("fCopyDate").value = iso(selected);
+            pickSlot(document.getElementById("fCopySlot"), document.getElementById("fSlot").value);
+            document.getElementById("copyStatus").textContent = "";
+        }
+    });
+
+    document.getElementById("btnCopyGo").addEventListener("click", function () {
+        var day = document.getElementById("fCopyDate").value;
+        var slot = document.getElementById("fCopySlot").value;
+        var st = document.getElementById("copyStatus");
+        if (!day) {
+            st.textContent = "Выберите день";
+            return;
+        }
+        var payload = formLessonPayload(day, slot);
+        if (!payload.subject_id || !payload.teacher_id) {
+            st.textContent = "Сначала выберите дисциплину и преподавателя";
+            return;
+        }
+        st.textContent = "Копирую…";
+        apiJson("/api/lessons/create/", payload).then(function (d) {
+            if (d.ok) {
+                rememberSubjectTeacher(payload.subject_id, payload.teacher_id, payload.teacher);
+                st.textContent = "Скопировано на " + day;
+                refreshJournal();
+            } else {
+                st.textContent = d.error || "Не удалось скопировать";
+            }
+        });
+    });
 
     document.getElementById("btnAddLesson").addEventListener("click", function () {
         openLessonForm(null);
@@ -869,19 +1002,15 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
     document.getElementById("lessonForm").addEventListener("submit", function (e) {
         e.preventDefault();
         var id = document.getElementById("lessonId").value;
-        var payload = {
-            date: iso(selected),
-            subject: document.getElementById("fSubject").value,
-            type: document.getElementById("fType").value,
-            start: (document.getElementById("fSlot").value || "18:00|19:30").split("|")[0],
-            end: (document.getElementById("fSlot").value || "18:00|19:30").split("|")[1],
-            room: document.getElementById("fRoom").value,
-            week: document.getElementById("fWeek").value,
-            teacher: document.getElementById("fTeacher").value
-        };
+        var payload = formLessonPayload(iso(selected), document.getElementById("fSlot").value);
+        if (!payload.subject_id || !payload.teacher_id) {
+            alert("Выберите дисциплину и преподавателя");
+            return;
+        }
         var url = id ? "/api/lessons/" + id + "/update/" : "/api/lessons/create/";
         apiJson(url, payload).then(function (d) {
             if (d.ok) {
+                rememberSubjectTeacher(payload.subject_id, payload.teacher_id, payload.teacher);
                 document.getElementById("lessonOverlay").classList.remove("is-open");
                 refreshJournal();
             } else {

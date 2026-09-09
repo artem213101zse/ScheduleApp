@@ -241,6 +241,29 @@
     user-select: none;
 }
 
+.copy-box {
+    display: none;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+}
+
+.copy-box.is-open { display: block; }
+
+.copy-hint {
+    font-size: 13px;
+    color: #888;
+    margin: 0 0 12px;
+    line-height: 1.35;
+}
+
+.copy-status {
+    min-height: 18px;
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--accent);
+}
+
 .edit-bar {
     display: none;
     margin: 4px 0 12px;
@@ -293,5 +316,11 @@
 .edit-form .login-label { margin-top: 4px; }
 .edit-form select.login-input {
     appearance: none;
-    background: #fff;
+    -webkit-appearance: none;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px;
 }

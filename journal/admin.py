@@ -17,6 +17,7 @@ from .models import (
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "is_journal")
+    search_fields = ("name", "slug")
 
 
 @admin.register(Teacher)
@@ -28,6 +29,15 @@ class TeacherAdmin(admin.ModelAdmin):
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
     search_fields = ("name",)
+    filter_horizontal = ("teachers",)
+    list_display = ("name", "teacher_names")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("teachers")
+
+    @admin.display(description="Преподаватели")
+    def teacher_names(self, obj):
+        return ", ".join(t.short_name for t in obj.teachers.all()) or "—"
 
 
 @admin.register(LessonSlot)
@@ -38,9 +48,15 @@ class LessonSlotAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ("date", "start_time", "group", "subject", "lesson_type", "room")
+    list_display = ("date", "start_time", "group", "subject", "teacher", "lesson_type", "room")
     list_filter = ("group", "lesson_type", "date")
     search_fields = ("subject__name", "teacher__short_name", "room")
+    autocomplete_fields = ("subject", "teacher", "group")
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if obj.subject_id and obj.teacher_id:
+            obj.subject.teachers.add(obj.teacher)
 
 
 @admin.register(StudentProfile)

@@ -142,7 +142,17 @@ def bootstrap_payload(request=None):
         "android_version": "2.1.0+253",
         "contact_email": "attendance@mirea.ru",
         "can_edit": can_edit,
-        "subjects": list(Subject.objects.order_by("name").values("id", "name")),
+        "subjects": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "teachers": [
+                    {"id": t.id, "short_name": t.short_name, "full_name": t.full_name}
+                    for t in s.teachers.all()
+                ],
+            }
+            for s in Subject.objects.order_by("name").prefetch_related("teachers")
+        ],
         "teachers": list(Teacher.objects.order_by("short_name").values("id", "short_name", "full_name")),
         "slots": [
             {
@@ -268,6 +278,31 @@ def _get_or_create_teacher(name):
     return Teacher.objects.create(short_name=name, full_name=name)
 
 
+def _resolve_subject(data):
+    sid = data.get("subject_id")
+    if sid not in (None, ""):
+        try:
+            return Subject.objects.get(pk=int(sid))
+        except (Subject.DoesNotExist, ValueError, TypeError):
+            raise ValueError("Дисциплина не найдена")
+    return _get_or_create_subject(data.get("subject"))
+
+
+def _resolve_teacher(data):
+    tid = data.get("teacher_id")
+    if tid not in (None, ""):
+        try:
+            return Teacher.objects.get(pk=int(tid))
+        except (Teacher.DoesNotExist, ValueError, TypeError):
+            raise ValueError("Преподаватель не найден")
+    return _get_or_create_teacher(data.get("teacher"))
+
+
+def _bind_subject_teacher(subject, teacher):
+    if subject is not None and teacher is not None:
+        subject.teachers.add(teacher)
+
+
 @require_http_methods(["POST"])
 def api_edit_mode(request):
     if not request.user.is_authenticated:
@@ -295,10 +330,12 @@ def api_lesson_create(request):
         if group is None:
             raise ValueError("Группа журнала не найдена")
         day = datetime.strptime(data.get("date") or "", "%Y-%m-%d").date()
+        subject = _resolve_subject(data)
+        teacher = _resolve_teacher(data)
         lesson = Lesson.objects.create(
             group=group,
-            subject=_get_or_create_subject(data.get("subject")),
-            teacher=_get_or_create_teacher(data.get("teacher")),
+            subject=subject,
+            teacher=teacher,
             date=day,
             start_time=_parse_time(data.get("start") or "18:00"),
             end_time=_parse_time(data.get("end") or "19:30"),
@@ -307,6 +344,7 @@ def api_lesson_create(request):
             room=(data.get("room") or "").strip(),
             location=(data.get("location") or "").strip(),
         )
+        _bind_subject_teacher(subject, teacher)
     except (ValueError, TypeError) as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=400)
     return JsonResponse({"ok": True, "lesson": _lesson_payload(lesson)})
@@ -320,10 +358,10 @@ def api_lesson_update(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
     data = _json_body(request)
     try:
-        if data.get("subject"):
-            lesson.subject = _get_or_create_subject(data.get("subject"))
-        if data.get("teacher"):
-            lesson.teacher = _get_or_create_teacher(data.get("teacher"))
+        if data.get("subject_id") or data.get("subject"):
+            lesson.subject = _resolve_subject(data)
+        if data.get("teacher_id") or data.get("teacher"):
+            lesson.teacher = _resolve_teacher(data)
         if data.get("start"):
             lesson.start_time = _parse_time(data["start"])
         if data.get("end"):
@@ -337,6 +375,7 @@ def api_lesson_update(request, pk):
         if "location" in data:
             lesson.location = (data.get("location") or "").strip()
         lesson.save()
+        _bind_subject_teacher(lesson.subject, lesson.teacher)
     except (ValueError, TypeError) as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=400)
     return JsonResponse({"ok": True, "lesson": _lesson_payload(lesson)})

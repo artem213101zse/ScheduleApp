@@ -100,6 +100,7 @@ class Command(BaseCommand):
                 room=room,
                 location=location,
             )
+            subj.teachers.add(teach)
 
         t1800, t1930, t1940, t2110 = time(18, 0), time(19, 30), time(19, 40), time(21, 10)
 
