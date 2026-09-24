@@ -46,6 +46,14 @@
 
             <div class="edit-bar" id="editBar">
                 <button type="button" class="edit-add" id="btnAddLesson">+ Добавить пару</button>
+                <button type="button" class="edit-add edit-copy-week" id="btnCopyWeekToggle">Копировать неделю</button>
+                <div id="copyWeekBox" class="copy-box">
+                    <p class="copy-hint">Все пары этой недели (пн–вс) появятся на выбранной неделе. Отметки «+» не копируются — новая неделя начинается с «Н».</p>
+                    <label class="login-label">Любой день нужной недели</label>
+                    <input class="login-input" id="fCopyWeekDate" type="date">
+                    <button class="close-btn" type="button" id="btnCopyWeekGo">Вставить неделю</button>
+                    <p class="copy-status" id="copyWeekStatus"></p>
+                </div>
             </div>
             <div class="swipe-pane" id="journalSwipe">
             <div class="cards" id="cards"></div>

@@ -82,3 +82,78 @@ class LessonEditorTests(TestCase):
         self.assertEqual(days[0][0], date(2026, 9, 7))
         self.assertEqual(days[1][0], date(2026, 9, 14))
         self.assertEqual(days[1][1], time(19, 40))
+
+    def _lesson(self, day, start=None, end=None, week="Н"):
+        return Lesson.objects.create(
+            group=self.group,
+            subject=self.subj,
+            teacher=self.t1,
+            date=day,
+            start_time=start or time(18, 0),
+            end_time=end or time(19, 30),
+            lesson_type="ПР",
+            week_type=week,
+            room="402",
+        )
+
+    def test_index_has_week_copy_controls(self):
+        html = self.client.get("/").content.decode("utf-8")
+        self.assertIn('id="btnCopyWeekToggle"', html)
+        self.assertIn('id="fCopyWeekDate"', html)
+        self.assertIn('id="btnCopyWeekGo"', html)
+
+    def test_quick_attendance_toggles_mark(self):
+        lesson = self._lesson(date(2026, 9, 7), week="Н")
+        resp = self.client.post(
+            f"/api/lessons/{lesson.pk}/update/",
+            data={"week": "+"},
+            content_type="application/json",
+        )
+        self.assertTrue(resp.json().get("ok"), resp.json())
+        lesson.refresh_from_db()
+        self.assertEqual(lesson.week_type, "+")
+        resp = self.client.post(
+            f"/api/lessons/{lesson.pk}/update/",
+            data={"week": "Н"},
+            content_type="application/json",
+        )
+        self.assertTrue(resp.json().get("ok"), resp.json())
+        lesson.refresh_from_db()
+        self.assertEqual(lesson.week_type, "Н")
+
+    def test_copy_week_shifts_lessons_and_resets_mark(self):
+        self._lesson(date(2026, 9, 7), week="+")
+        self._lesson(date(2026, 9, 9), start=time(19, 40), end=time(21, 10), week="+")
+        resp = self.client.post(
+            "/api/lessons/copy-week/",
+            data={"from": "2026-09-08", "to": "2026-09-16"},
+            content_type="application/json",
+        )
+        body = resp.json()
+        self.assertTrue(body.get("ok"), body)
+        self.assertEqual(body["created"], 2)
+        self.assertEqual(body["skipped"], 0)
+        monday = Lesson.objects.get(date=date(2026, 9, 14))
+        wednesday = Lesson.objects.get(date=date(2026, 9, 16))
+        self.assertEqual(monday.week_type, "Н")
+        self.assertEqual(monday.subject_id, self.subj.id)
+        self.assertEqual(monday.teacher_id, self.t1.id)
+        self.assertEqual(monday.room, "402")
+        self.assertEqual(wednesday.start_time, time(19, 40))
+        again = self.client.post(
+            "/api/lessons/copy-week/",
+            data={"from": "2026-09-07", "to": "2026-09-14"},
+            content_type="application/json",
+        )
+        self.assertEqual(again.json()["created"], 0)
+        self.assertEqual(again.json()["skipped"], 2)
+
+    def test_copy_week_rejects_same_week(self):
+        self._lesson(date(2026, 9, 7))
+        resp = self.client.post(
+            "/api/lessons/copy-week/",
+            data={"from": "2026-09-07", "to": "2026-09-09"},
+            content_type="application/json",
+        )
+        self.assertFalse(resp.json().get("ok"))
+        self.assertEqual(resp.status_code, 400)

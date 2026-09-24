@@ -141,8 +141,12 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
         }
 
         $cards.innerHTML = list.map(function (item) {
+            var present = item.week === "+";
             var actions = canEdit ? (
                 '<div class="card-edit">' +
+                    '<button type="button" class="att' + (present ? " is-on" : "") + '" data-attend="' + item.id + '" data-week="' + (present ? "+" : "Н") + '">' +
+                        (present ? "Снять +" : "Отметить +") +
+                    "</button>" +
                     '<button type="button" class="ed" data-edit="' + item.id + '">Изменить</button>' +
                     '<button type="button" class="del" data-del="' + item.id + '">Удалить</button>' +
                 "</div>"
@@ -971,6 +975,37 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
     document.getElementById("btnAddLesson").addEventListener("click", function () {
         openLessonForm(null);
     });
+
+    document.getElementById("btnCopyWeekToggle").addEventListener("click", function () {
+        var box = document.getElementById("copyWeekBox");
+        box.classList.toggle("is-open");
+        if (box.classList.contains("is-open")) {
+            var next = copy(selected);
+            next.setDate(next.getDate() + 7);
+            document.getElementById("fCopyWeekDate").value = iso(next);
+            document.getElementById("copyWeekStatus").textContent = "";
+        }
+    });
+
+    document.getElementById("btnCopyWeekGo").addEventListener("click", function () {
+        var day = document.getElementById("fCopyWeekDate").value;
+        var st = document.getElementById("copyWeekStatus");
+        if (!day) {
+            st.textContent = "Выберите день нужной недели";
+            return;
+        }
+        st.textContent = "Копирую…";
+        apiJson("/api/lessons/copy-week/", { from: iso(selected), to: day }).then(function (d) {
+            if (d.ok) {
+                var msg = "Скопировано пар: " + d.created;
+                if (d.skipped) msg += ", уже были: " + d.skipped;
+                st.textContent = msg;
+                refreshJournal();
+            } else {
+                st.textContent = d.error || "Не удалось скопировать неделю";
+            }
+        });
+    });
     document.getElementById("lessonOverlay").addEventListener("click", function (e) {
         if (e.target === this) this.classList.remove("is-open");
     });
@@ -978,6 +1013,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
     document.getElementById("cards").addEventListener("click", function (e) {
         var del = e.target.closest("[data-del]");
         var ed = e.target.closest("[data-edit]");
+        var att = e.target.closest("[data-attend]");
         if (del) {
             if (!confirm("Удалить эту пару?")) return;
             apiJson("/api/lessons/" + del.dataset.del + "/delete/", {}).then(function (d) {
@@ -990,6 +1026,14 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
             var key = iso(selected);
             var item = (LESSONS[key] || []).find(function (x) { return String(x.id) === String(ed.dataset.edit); });
             if (item) openLessonForm(item);
+            return;
+        }
+        if (att) {
+            var next = att.dataset.week === "+" ? "Н" : "+";
+            apiJson("/api/lessons/" + att.dataset.attend + "/update/", { week: next }).then(function (d) {
+                if (d.ok) refreshJournal();
+                else alert(d.error || "Не удалось отметить");
+            });
             return;
         }
         var art = e.target.closest("article.card[data-lid]");

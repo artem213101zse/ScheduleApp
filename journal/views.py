@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
@@ -389,3 +389,54 @@ def api_lesson_delete(request, pk):
     lesson = get_object_or_404(Lesson, pk=pk)
     lesson.delete()
     return JsonResponse({"ok": True})
+
+
+def _monday(day):
+    return day - timedelta(days=day.weekday())
+
+
+@require_http_methods(["POST"])
+def api_copy_week(request):
+    denied = _require_edit(request)
+    if denied:
+        return denied
+    data = _json_body(request)
+    try:
+        src_day = datetime.strptime(data.get("from") or "", "%Y-%m-%d").date()
+        dst_day = datetime.strptime(data.get("to") or "", "%Y-%m-%d").date()
+    except ValueError:
+        return JsonResponse({"ok": False, "error": "Укажите неделю"}, status=400)
+    group = Group.objects.filter(is_journal=True).first()
+    if group is None:
+        return JsonResponse({"ok": False, "error": "Группа журнала не найдена"}, status=400)
+    src_mon = _monday(src_day)
+    dst_mon = _monday(dst_day)
+    if src_mon == dst_mon:
+        return JsonResponse({"ok": False, "error": "Выберите другую неделю"}, status=400)
+    src_end = src_mon + timedelta(days=6)
+    delta = dst_mon - src_mon
+    source = list(group.lessons.filter(date__gte=src_mon, date__lte=src_end))
+    if not source:
+        return JsonResponse({"ok": False, "error": "На этой неделе нет пар"}, status=400)
+    created = 0
+    skipped = 0
+    for lesson in source:
+        new_date = lesson.date + delta
+        already = group.lessons.filter(date=new_date, start_time=lesson.start_time).exists()
+        if already:
+            skipped += 1
+            continue
+        Lesson.objects.create(
+            group=group,
+            subject=lesson.subject,
+            teacher=lesson.teacher,
+            date=new_date,
+            start_time=lesson.start_time,
+            end_time=lesson.end_time,
+            lesson_type=lesson.lesson_type,
+            week_type="Н",
+            room=lesson.room,
+            location=lesson.location,
+        )
+        created += 1
+    return JsonResponse({"ok": True, "created": created, "skipped": skipped})
