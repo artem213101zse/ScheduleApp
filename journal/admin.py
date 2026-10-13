@@ -4,6 +4,7 @@ from .models import (
     Absence,
     Grade,
     Group,
+    JournalSettings,
     Lesson,
     LessonSlot,
     Notification,
@@ -48,8 +49,8 @@ class LessonSlotAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ("date", "start_time", "group", "subject", "teacher", "lesson_type", "room")
-    list_filter = ("group", "lesson_type", "date")
+    list_display = ("date", "start_time", "group", "subject", "teacher", "lesson_type", "room", "source", "accepted")
+    list_filter = ("group", "lesson_type", "date", "source", "accepted")
     search_fields = ("subject__name", "teacher__short_name", "room")
     autocomplete_fields = ("subject", "teacher", "group")
 
@@ -82,3 +83,8 @@ class UniServiceAdmin(admin.ModelAdmin):
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ("title", "student", "created_at")
+
+
+@admin.register(JournalSettings)
+class JournalSettingsAdmin(admin.ModelAdmin):
+    list_display = ("auto_attend", "sync_group_name", "semester_start", "semester_end", "last_sync_at")

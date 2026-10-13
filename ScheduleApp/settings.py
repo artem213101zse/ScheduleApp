@@ -150,3 +150,8 @@ LOGOUT_REDIRECT_URL = '/'
 
 # Пароль служебного режима редактирования расписания
 SCHEDULE_EDIT_PASSWORD = os.environ.get("SCHEDULE_EDIT_PASSWORD", "rasp2026")
+
+# Официальное расписание РТУ МИРЭА (Excel с www.mirea.ru/schedule/)
+MIREA_SCHEDULE_URL = os.environ.get("MIREA_SCHEDULE_URL", "https://www.mirea.ru/schedule/")
+MIREA_SCHEDULE_GROUP = os.environ.get("MIREA_SCHEDULE_GROUP", "")
+MIREA_SCHEDULE_FILE = os.environ.get("MIREA_SCHEDULE_FILE", "")

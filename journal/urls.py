@@ -16,4 +16,6 @@ urlpatterns = [
     path("api/lessons/<int:pk>/update/", views.api_lesson_update, name="api_lesson_update"),
     path("api/lessons/<int:pk>/delete/", views.api_lesson_delete, name="api_lesson_delete"),
     path("api/edit-mode/", views.api_edit_mode, name="api_edit_mode"),
+    path("api/auto-attend/", views.api_auto_attend, name="api_auto_attend"),
+    path("api/schedule-sync/", views.api_schedule_sync, name="api_schedule_sync"),
 ]

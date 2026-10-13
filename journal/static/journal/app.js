@@ -5,6 +5,8 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
     const BOOT = JSON.parse(document.getElementById("bootstrap-data").textContent);
     let LESSONS = BOOT.journal_lessons || {};
     let canEdit = !!BOOT.can_edit;
+    let autoAttend = !!BOOT.auto_attend;
+    let pendingCount = Number(BOOT.pending_count || 0);
     const GROUPS = BOOT.groups || [];
     const UNI = BOOT.uni || [];
     const UNI_SVG = BOOT.uni_svg || {};
@@ -74,7 +76,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
             const d = copy(mon);
             d.setDate(mon.getDate() + i);
             const key = iso(d);
-            const count = (LESSONS[key] || []).length;
+            const count = journalList(key).length;
             const btn = document.createElement("button");
             btn.className = "day";
             if (iso(d) === iso(selected)) btn.classList.add("is-active");
@@ -114,7 +116,37 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
         if (bar) bar.classList.toggle("is-on", canEdit);
         if (cards) cards.classList.toggle("is-editing", canEdit);
         if (sw) sw.classList.toggle("off", !canEdit);
+        setAutoAttendUi(autoAttend);
+        setSyncUi();
+        renderWeek();
         renderCards();
+    }
+
+    function setSyncUi() {
+        var acc = document.getElementById("btnAcceptSync");
+        var can = document.getElementById("btnCancelSync");
+        if (acc) acc.disabled = pendingCount <= 0;
+        if (can) can.disabled = pendingCount <= 0;
+    }
+
+    function isPending(item) {
+        return item && (item.pending || (item.source === "sync" && item.accepted === false));
+    }
+
+    function journalList(key) {
+        var list = LESSONS[key] || [];
+        if (canEdit) return list;
+        return list.filter(function (x) { return !isPending(x); });
+    }
+
+    function ordinaryList(key) {
+        return (LESSONS[key] || []).filter(function (x) { return !isPending(x); });
+    }
+
+    function setAutoAttendUi(on) {
+        autoAttend = !!on;
+        var sw = document.getElementById("autoAttendSwitch");
+        if (sw) sw.classList.toggle("off", !autoAttend);
     }
 
     function refreshJournal() {
@@ -125,6 +157,13 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
             if (activeGroup && d.group && activeGroup.id === d.group) {
                 activeGroup.lessons = LESSONS;
             }
+            pendingCount = 0;
+            Object.keys(LESSONS).forEach(function (k) {
+                (LESSONS[k] || []).forEach(function (item) {
+                    if (isPending(item)) pendingCount += 1;
+                });
+            });
+            setSyncUi();
             renderWeek();
             renderCards();
         });
@@ -132,7 +171,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
 
     function renderCards() {
         const key = iso(selected);
-        const list = LESSONS[key] || [];
+        const list = journalList(key);
         $datePillText.textContent = DAYS[selected.getDay()] + " - " + selected.getDate() + " " + MONTHS_GEN[selected.getMonth()] + " " + selected.getFullYear();
 
         if (!list.length) {
@@ -142,17 +181,24 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
 
         $cards.innerHTML = list.map(function (item) {
             var present = item.week === "+";
-            var actions = canEdit ? (
-                '<div class="card-edit">' +
-                    '<button type="button" class="att' + (present ? " is-on" : "") + '" data-attend="' + item.id + '" data-week="' + (present ? "+" : "Н") + '">' +
+            var pending = isPending(item);
+            var kind = pending ? "is-pending is-sync" : (item.source === "sync" ? "is-sync" : "is-manual");
+            var actions = "";
+            if (canEdit) {
+                actions = '<div class="card-edit">';
+                if (pending) {
+                    actions += '<button type="button" class="add" data-accept="' + item.id + '">Добавить в расписание</button>';
+                } else {
+                    actions += '<button type="button" class="att' + (present ? " is-on" : "") + '" data-attend="' + item.id + '" data-week="' + (present ? "+" : "Н") + '">' +
                         (present ? "Снять +" : "Отметить +") +
-                    "</button>" +
-                    '<button type="button" class="ed" data-edit="' + item.id + '">Изменить</button>' +
+                        "</button>";
+                }
+                actions += '<button type="button" class="ed" data-edit="' + item.id + '">Изменить</button>' +
                     '<button type="button" class="del" data-del="' + item.id + '">Удалить</button>' +
-                "</div>"
-            ) : "";
+                    "</div>";
+            }
             return (
-                '<article class="card" data-lid="' + item.id + '">' +
+                '<article class="card ' + kind + '" data-lid="' + item.id + '">' +
                     '<div class="card-top">' +
                         '<div class="time-row">' +
                             '<span class="time">' + item.time + "</span>" +
@@ -165,7 +211,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
                     '<div class="card-footer">' +
                         '<div class="tags">' +
                             '<span class="tag-h' + (item.week === "+" ? " is-plus" : "") + '">' + item.week + "</span>" +
-                            '<span class="tag-src">Расписание</span>' +
+                            '<span class="tag-src">' + (canEdit ? (pending ? "Черновик" : (item.source === "sync" ? "МИРЭА" : "Вручную")) : "Расписание") + "</span>" +
                         "</div>" +
                         '<div class="teacher">' + item.teacher + "</div>" +
                     "</div>" +
@@ -204,7 +250,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
             const btn = document.createElement("button");
             btn.className = "pday";
             if (d.getMonth() !== pickerCursor.getMonth()) btn.classList.add("mute");
-            if (LESSONS[iso(d)] && LESSONS[iso(d)].length) btn.classList.add("has");
+            if (journalList(iso(d)).length) btn.classList.add("has");
             if (iso(d) === iso(selected)) btn.classList.add("is-sel");
             btn.textContent = d.getDate();
             btn.addEventListener("click", function () {
@@ -336,7 +382,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
         for (let i = 0; i < 7; i++) {
             const d = copy(mon);
             d.setDate(mon.getDate() + i);
-            const list = groupLessons()[iso(d)] || [];
+            const list = ordinaryList(iso(d));
             const btn = document.createElement("button");
             btn.className = "day";
             if (iso(d) === iso(selected)) btn.classList.add("is-active");
@@ -361,7 +407,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
         const track = document.getElementById("tlTrack");
         track.style.height = ((HOUR_END - HOUR_START + 1) * HOUR_H) + "px";
         track.innerHTML = "";
-        const list = (groupLessons()[iso(selected)] || []).map(asCompareLesson);
+        const list = ordinaryList(iso(selected)).map(asCompareLesson);
         list.forEach(function (item, idx) {
             const range = parseRange(item.time);
             const top = (range.start - HOUR_START) * HOUR_H;
@@ -892,6 +938,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
             apiJson("/api/edit-mode/", { enabled: false }).then(function () {
                 canEdit = false;
                 applyEditVisual();
+                refreshJournal();
             });
             return;
         }
@@ -905,6 +952,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
                 canEdit = true;
                 document.getElementById("editPassword").value = "";
                 applyEditVisual();
+                refreshJournal();
             } else {
                 document.getElementById("editStatus").textContent = d.error || "Ошибка";
             }
@@ -972,8 +1020,109 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
         });
     });
 
+    document.getElementById("autoAttendSwitch").addEventListener("click", function () {
+        var next = !autoAttend;
+        apiJson("/api/auto-attend/", { enabled: next }).then(function (d) {
+            if (!d.ok) {
+                document.getElementById("autoAttendStatus").textContent = d.error || "Не удалось сохранить";
+                return;
+            }
+            setAutoAttendUi(d.auto_attend);
+            var st = document.getElementById("autoAttendStatus");
+            if (d.auto_attend) {
+                st.textContent = d.marked ? ("Включено, отмечено пар: " + d.marked) : "Автоотметка включена";
+            } else {
+                st.textContent = "Автоотметка выключена";
+            }
+            if (d.marked) refreshJournal();
+        });
+    });
+
+    document.getElementById("btnMarkPast").addEventListener("click", function () {
+        var st = document.getElementById("autoAttendStatus");
+        st.textContent = "Отмечаю…";
+        apiJson("/api/auto-attend/", { mark_all: true }).then(function (d) {
+            if (!d.ok) {
+                st.textContent = d.error || "Не удалось отметить";
+                return;
+            }
+            st.textContent = d.marked ? ("Отмечено пар: " + d.marked) : "Прошедших неотмеченных пар нет";
+            if (d.marked) refreshJournal();
+        });
+    });
+
+    setInterval(function () {
+        if (!autoAttend) return;
+        apiJson("/api/auto-attend/", { tick: true }).then(function (d) {
+            if (!d.ok) return;
+            if (typeof d.auto_attend === "boolean") setAutoAttendUi(d.auto_attend);
+            if (d.marked) refreshJournal();
+        });
+    }, 30000);
+
     document.getElementById("btnAddLesson").addEventListener("click", function () {
         openLessonForm(null);
+    });
+
+    function syncStatus(text) {
+        var el = document.getElementById("syncStatus");
+        if (el) el.textContent = text || "";
+    }
+
+    document.getElementById("btnSyncSchedule").addEventListener("click", function () {
+        syncStatus("Загружаю официальное расписание…");
+        apiJson("/api/schedule-sync/", { action: "sync" }).then(function (d) {
+            if (!d.ok) {
+                syncStatus(d.error || "Не удалось синхронизировать");
+                return;
+            }
+            pendingCount = Number(d.pending || 0);
+            setSyncUi();
+            var msg = "Черновиков: " + pendingCount;
+            if (d.skipped_manual) msg += ", свои пары не тронуты: " + d.skipped_manual;
+            if (d.group) msg += " (" + d.group + ")";
+            syncStatus(msg);
+            refreshJournal();
+        }).catch(function () {
+            syncStatus("Сеть недоступна, попробуйте ещё раз");
+        });
+    });
+
+    document.getElementById("btnAcceptSync").addEventListener("click", function () {
+        if (pendingCount <= 0) {
+            syncStatus("Нет серых пар для добавления");
+            return;
+        }
+        syncStatus("Добавляю…");
+        apiJson("/api/schedule-sync/", { action: "accept" }).then(function (d) {
+            if (!d.ok) {
+                syncStatus(d.error || "Не удалось добавить");
+                return;
+            }
+            pendingCount = Number(d.pending || 0);
+            setSyncUi();
+            syncStatus(d.accepted ? ("Добавлено в расписание: " + d.accepted) : "Нечего добавлять");
+            refreshJournal();
+        });
+    });
+
+    document.getElementById("btnCancelSync").addEventListener("click", function () {
+        if (pendingCount <= 0) {
+            syncStatus("Нет черновиков для отмены");
+            return;
+        }
+        if (!confirm("Убрать все серые пары из синхронизации? Свои пары останутся.")) return;
+        syncStatus("Отменяю…");
+        apiJson("/api/schedule-sync/", { action: "cancel" }).then(function (d) {
+            if (!d.ok) {
+                syncStatus(d.error || "Не удалось отменить");
+                return;
+            }
+            pendingCount = 0;
+            setSyncUi();
+            syncStatus(d.deleted ? ("Удалено черновиков: " + d.deleted) : "Черновиков не было");
+            refreshJournal();
+        });
     });
 
     document.getElementById("btnCopyWeekToggle").addEventListener("click", function () {
@@ -1014,6 +1163,7 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
         var del = e.target.closest("[data-del]");
         var ed = e.target.closest("[data-edit]");
         var att = e.target.closest("[data-attend]");
+        var acc = e.target.closest("[data-accept]");
         if (del) {
             if (!confirm("Удалить эту пару?")) return;
             apiJson("/api/lessons/" + del.dataset.del + "/delete/", {}).then(function (d) {
@@ -1033,6 +1183,18 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
             apiJson("/api/lessons/" + att.dataset.attend + "/update/", { week: next }).then(function (d) {
                 if (d.ok) refreshJournal();
                 else alert(d.error || "Не удалось отметить");
+            });
+            return;
+        }
+        if (acc) {
+            apiJson("/api/schedule-sync/", { action: "accept", id: acc.dataset.accept }).then(function (d) {
+                if (!d.ok) {
+                    alert(d.error || "Не удалось добавить");
+                    return;
+                }
+                pendingCount = Number(d.pending || 0);
+                setSyncUi();
+                refreshJournal();
             });
             return;
         }

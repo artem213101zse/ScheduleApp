@@ -282,10 +282,74 @@
     background: #f4f8ff;
 }
 
+.edit-add:disabled {
+    opacity: 0.45;
+}
+
 .edit-copy-week {
     margin-top: 8px;
     border-style: solid;
     background: #fff;
+}
+
+.edit-sync {
+    margin-top: 8px;
+    border-style: solid;
+    background: #eef3ff;
+}
+
+.edit-sync-accept {
+    margin-top: 8px;
+    border-style: solid;
+    background: #e8f8ee;
+    color: #1b8a4a;
+    border-color: #b7e0c2;
+}
+
+.edit-sync-cancel {
+    margin-top: 8px;
+    border-style: solid;
+    background: #fff;
+    color: #c62828;
+    border-color: #ef9a9a;
+}
+
+.cards.is-editing .card.is-manual {
+    background: #eef8f3;
+    border-color: #b7e0c2;
+}
+
+.cards.is-editing .card.is-sync,
+.cards.is-editing .card.is-pending {
+    background: #f0f1f3;
+    border-color: #d0d3d8;
+}
+
+.card-edit .add {
+    background: #e8f8ee;
+    color: #1b8a4a;
+}
+
+.auto-attend-row {
+    margin-bottom: 6px;
+}
+
+.auto-attend-row span {
+    font-size: 14px;
+    color: #444;
+    font-weight: 600;
+}
+
+.edit-mark-past {
+    margin: 4px 0 4px;
+    border-style: solid;
+    background: #e8f8ee;
+    color: #1b8a4a;
+    border-color: #b7e0c2;
+}
+
+.edit-bar .copy-hint {
+    margin-bottom: 10px;
 }
 
 .edit-bar .copy-box {

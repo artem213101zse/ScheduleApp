@@ -45,7 +45,19 @@
             </div>
 
             <div class="edit-bar" id="editBar">
+                <div class="secret-row auto-attend-row">
+                    <span>Автоотметка прошедших</span>
+                    <div class="switch off" id="autoAttendSwitch"></div>
+                </div>
+                <p class="copy-hint">Если включено, «+» ставится сам, как только пара закончилась.</p>
+                <button type="button" class="edit-add edit-mark-past" id="btnMarkPast">Проставить все прошедшие +</button>
+                <p class="copy-status" id="autoAttendStatus"></p>
                 <button type="button" class="edit-add" id="btnAddLesson">+ Добавить пару</button>
+                <button type="button" class="edit-add edit-sync" id="btnSyncSchedule">Синхронизировать расписание</button>
+                <button type="button" class="edit-add edit-sync-accept" id="btnAcceptSync">Добавить синхронизированные пары</button>
+                <button type="button" class="edit-add edit-sync-cancel" id="btnCancelSync">Отменить синхронизацию</button>
+                <p class="copy-hint">Серые карточки — официальные пары, ещё не в журнале. Зелёные — добавленные вручную. Цвета только в редакторе.</p>
+                <p class="copy-status" id="syncStatus"></p>
                 <button type="button" class="edit-add edit-copy-week" id="btnCopyWeekToggle">Копировать неделю</button>
                 <div id="copyWeekBox" class="copy-box">
                     <p class="copy-hint">Все пары этой недели (пн–вс) появятся на выбранной неделе. Отметки «+» не копируются — новая неделя начинается с «Н».</p>

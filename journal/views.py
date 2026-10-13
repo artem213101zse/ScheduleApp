@@ -9,10 +9,24 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from .models import Group, Lesson, LessonSlot, StudentProfile, Subject, Teacher, UniService
+from django.db.models import Q
+from django.utils import timezone
+
+from .models import (
+    Group,
+    JournalSettings,
+    Lesson,
+    LessonSlot,
+    StudentProfile,
+    Subject,
+    Teacher,
+    UniService,
+)
+from .mirea_sync import SyncError, accept_pending, cancel_pending, sync_journal
 
 
 def _lesson_payload(lesson: Lesson) -> dict:
+    pending = lesson.source == "sync" and not lesson.accepted
     return {
         "id": lesson.id,
         "time": lesson.time_label,
@@ -27,6 +41,9 @@ def _lesson_payload(lesson: Lesson) -> dict:
         "teacher_id": lesson.teacher_id,
         "start": lesson.start_time.strftime("%H:%M"),
         "end": lesson.end_time.strftime("%H:%M"),
+        "source": lesson.source,
+        "accepted": lesson.accepted,
+        "pending": pending,
     }
 
 
@@ -35,6 +52,17 @@ def _lessons_by_date(queryset) -> dict:
     for lesson in queryset.select_related("subject", "teacher"):
         data.setdefault(lesson.date.isoformat(), []).append(_lesson_payload(lesson))
     return data
+
+
+def _can_edit(request) -> bool:
+    return bool(request and request.session.get("schedule_edit"))
+
+
+def _group_lessons(group, request=None):
+    qs = group.lessons.all()
+    if not _can_edit(request):
+        qs = qs.filter(accepted=True)
+    return qs
 
 
 def _student(request=None):
@@ -53,15 +81,45 @@ def _student(request=None):
     )
 
 
+def _past_lessons_q(now=None):
+    now = now or timezone.localtime()
+    return Q(date__lt=now.date()) | Q(date=now.date(), end_time__lte=now.time())
+
+
+def mark_past_lessons():
+    group = Group.objects.filter(is_journal=True).first()
+    if group is None:
+        return 0
+    return (
+        group.lessons.filter(accepted=True)
+        .exclude(week_type="+")
+        .filter(_past_lessons_q())
+        .update(week_type="+")
+    )
+
+
+def maybe_auto_attend():
+    cfg = JournalSettings.objects.filter(pk=1).first()
+    if not cfg or not cfg.auto_attend:
+        return 0
+    return mark_past_lessons()
+
+
 def bootstrap_payload(request=None):
+    maybe_auto_attend()
     student = _student(request)
     groups = []
     journal_lessons = {}
     default_group = "bsmo"
     journal_slug = None
 
+    pending_count = 0
+    journal_group = Group.objects.filter(is_journal=True).first()
+    if journal_group is not None:
+        pending_count = journal_group.lessons.filter(source="sync", accepted=False).count()
+
     for group in Group.objects.all():
-        lessons = _lessons_by_date(group.lessons.all())
+        lessons = _lessons_by_date(_group_lessons(group, request))
         groups.append(
             {
                 "id": group.slug,
@@ -142,6 +200,8 @@ def bootstrap_payload(request=None):
         "android_version": "2.1.0+253",
         "contact_email": "attendance@mirea.ru",
         "can_edit": can_edit,
+        "auto_attend": JournalSettings.get().auto_attend,
+        "pending_count": pending_count,
         "subjects": [
             {
                 "id": s.id,
@@ -226,7 +286,8 @@ def api_lessons(request):
         group = Group.objects.filter(is_journal=True).first()
     if group is None:
         return JsonResponse({"lessons": {}})
-    qs = group.lessons.all()
+    maybe_auto_attend()
+    qs = _group_lessons(group, request)
     date_from = request.GET.get("from")
     date_to = request.GET.get("to")
     if date_from:
@@ -343,6 +404,8 @@ def api_lesson_create(request):
             week_type=(data.get("week") or "Н").replace("В", "+"),
             room=(data.get("room") or "").strip(),
             location=(data.get("location") or "").strip(),
+            source="manual",
+            accepted=True,
         )
         _bind_subject_teacher(subject, teacher)
     except (ValueError, TypeError) as exc:
@@ -415,7 +478,7 @@ def api_copy_week(request):
         return JsonResponse({"ok": False, "error": "Выберите другую неделю"}, status=400)
     src_end = src_mon + timedelta(days=6)
     delta = dst_mon - src_mon
-    source = list(group.lessons.filter(date__gte=src_mon, date__lte=src_end))
+    source = list(group.lessons.filter(date__gte=src_mon, date__lte=src_end, accepted=True))
     if not source:
         return JsonResponse({"ok": False, "error": "На этой неделе нет пар"}, status=400)
     created = 0
@@ -437,6 +500,67 @@ def api_copy_week(request):
             week_type="Н",
             room=lesson.room,
             location=lesson.location,
+            source=lesson.source,
+            accepted=True,
         )
         created += 1
     return JsonResponse({"ok": True, "created": created, "skipped": skipped})
+
+
+@require_http_methods(["POST"])
+def api_auto_attend(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"ok": False, "error": "Нужна авторизация"}, status=401)
+    data = _json_body(request)
+    cfg = JournalSettings.get()
+    changing = "enabled" in data or bool(data.get("mark_all"))
+    if changing:
+        denied = _require_edit(request)
+        if denied:
+            return denied
+    if "enabled" in data:
+        cfg.auto_attend = bool(data.get("enabled"))
+        cfg.save(update_fields=["auto_attend"])
+        marked = mark_past_lessons() if cfg.auto_attend else 0
+        return JsonResponse({"ok": True, "auto_attend": cfg.auto_attend, "marked": marked})
+    if data.get("mark_all"):
+        marked = mark_past_lessons()
+        return JsonResponse({"ok": True, "auto_attend": cfg.auto_attend, "marked": marked})
+    marked = mark_past_lessons() if cfg.auto_attend else 0
+    return JsonResponse({"ok": True, "auto_attend": cfg.auto_attend, "marked": marked})
+
+
+@require_http_methods(["POST"])
+def api_schedule_sync(request):
+    denied = _require_edit(request)
+    if denied:
+        return denied
+    data = _json_body(request)
+    action = (data.get("action") or "sync").strip()
+    try:
+        if action == "cancel":
+            deleted = cancel_pending()
+            return JsonResponse({"ok": True, "action": "cancel", "deleted": deleted, "pending": 0})
+        if action == "accept":
+            pk = data.get("id")
+            if pk not in (None, ""):
+                try:
+                    pk = int(pk)
+                except (TypeError, ValueError):
+                    return JsonResponse({"ok": False, "error": "Некорректная пара"}, status=400)
+            else:
+                pk = None
+            accepted = accept_pending(pk)
+            group = Group.objects.filter(is_journal=True).first()
+            pending = (
+                group.lessons.filter(source="sync", accepted=False).count() if group else 0
+            )
+            return JsonResponse(
+                {"ok": True, "action": "accept", "accepted": accepted, "pending": pending}
+            )
+        stats = sync_journal()
+        stats["ok"] = True
+        stats["action"] = "sync"
+        return JsonResponse(stats)
+    except SyncError as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=400)

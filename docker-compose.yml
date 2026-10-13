@@ -11,6 +11,7 @@ services:
       CSRF_TRUSTED_ORIGINS: "${CSRF_TRUSTED_ORIGINS:-}"
       DATABASE_PATH: /app/data/db.sqlite3
       SCHEDULE_EDIT_PASSWORD: "${SCHEDULE_EDIT_PASSWORD:-rasp2026}"
+      MIREA_SCHEDULE_GROUP: "${MIREA_SCHEDULE_GROUP:-БСМО-31-25}"
     volumes:
       # Живая SQLite. Положите сюда свой db.sqlite3 перед первым запуском:
       #   mkdir data

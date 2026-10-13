@@ -93,6 +93,21 @@ class Lesson(models.Model):
     )
     room = models.CharField(max_length=32, blank=True)
     location = models.CharField(max_length=64, blank=True)
+    SOURCE_CHOICES = [
+        ("manual", "Вручную"),
+        ("sync", "Синхронизация"),
+    ]
+    source = models.CharField(
+        max_length=8,
+        choices=SOURCE_CHOICES,
+        default="manual",
+        verbose_name="Источник",
+    )
+    accepted = models.BooleanField(
+        default=True,
+        verbose_name="В расписании",
+        help_text="Снято — серый черновик из синхронизации, виден только в редакторе",
+    )
 
     class Meta:
         verbose_name = "Пара"
@@ -180,6 +195,52 @@ class UniService(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class JournalSettings(models.Model):
+    auto_attend = models.BooleanField(
+        default=False,
+        verbose_name="Автоотметка посещения",
+        help_text="Самим ставить «+», когда пара уже закончилась",
+    )
+    sync_group_name = models.CharField(
+        max_length=32,
+        blank=True,
+        verbose_name="Группа в Excel МИРЭА",
+        help_text="Если пусто — берётся группа студента, иначе имя журнальной группы",
+    )
+    semester_start = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Начало семестра",
+    )
+    semester_end = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Конец семестра",
+    )
+    last_sync_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Последняя синхронизация",
+    )
+    sync_file_url = models.URLField(
+        max_length=500,
+        blank=True,
+        verbose_name="Последний файл расписания",
+    )
+
+    class Meta:
+        verbose_name = "Настройки журнала"
+        verbose_name_plural = "Настройки журнала"
+
+    def __str__(self):
+        return "Настройки журнала"
+
+    @classmethod
+    def get(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
 
 
 class Notification(models.Model):
