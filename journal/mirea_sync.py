@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import ssl
 import tempfile
@@ -19,7 +20,21 @@ from django.utils import timezone
 from .models import Group, JournalSettings, Lesson, StudentProfile, Subject, Teacher
 
 GROUP_RE = re.compile(r"([А-Яа-яA-Za-z]{4}-\d{2}-\d{2})")
-HREF_RE = re.compile(r"""href\s*=\s*["']([^"']+\.(?:xlsx?|XLSX?))["']""", re.I)
+HREF_RE = re.compile(
+    r"""(?:href\s*=\s*["']([^"']+\.(?:xlsx?|XLSX?))["']|(https?://[^\s"'<>]+\.(?:xlsx?|XLSX?))|(/upload/[^\s"'<>]+\.(?:xlsx?|XLSX?)))""",
+    re.I,
+)
+SCHEDULE_OF_BASES = (
+    "https://schedule-of.mirea.ru",
+    "https://timetable.mirea.ru",
+    "https://schedule.mirea.ru",
+)
+BLOCKED_MARKERS = (
+    "ddos-guard",
+    "restricted access from your current ip",
+    "access denied",
+    "ошибка 403",
+)
 WEEK_HINT_RE = re.compile(r"кр\.?\s*([\d,\s\-]+)\s*н", re.I)
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -351,29 +366,58 @@ def resolve_excel_group_name() -> str:
     raise SyncError("Не найдена группа для синхронизации")
 
 
-def _http_get(url: str, timeout: int = 45) -> bytes:
+def _is_blocked_body(data: bytes) -> bool:
+    text = data[:4000].decode("utf-8", "ignore").lower()
+    return any(marker in text for marker in BLOCKED_MARKERS)
+
+
+def _http_get(url: str, timeout: int = 25) -> bytes:
     req = urllib.request.Request(
         url,
         headers={
             "User-Agent": UA,
             "Accept": "*/*",
             "Accept-Language": "ru-RU,ru;q=0.9,en;q=0.8",
+            "Referer": "https://www.mirea.ru/schedule/",
         },
     )
     context = ssl.create_default_context()
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
-            return resp.read()
-    except ssl.SSLError:
-        context = ssl._create_unverified_context()
-        with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
-            return resp.read()
+        try:
+            with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
+                data = resp.read()
+        except ssl.SSLError:
+            context = ssl._create_unverified_context()
+            with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
+                data = resp.read()
+    except urllib.error.HTTPError as exc:
+        body = b""
+        try:
+            body = exc.read()
+        except Exception:
+            pass
+        if exc.code in (401, 403) or _is_blocked_body(body):
+            raise SyncError(
+                "МИРЭА закрыла доступ с этого IP (403). "
+                "С нидерландского сервера сайт не открывается — загрузите Excel файлом."
+            ) from exc
+        raise SyncError(f"Сайт расписания ответил {exc.code}") from exc
+    except (urllib.error.URLError, TimeoutError, ssl.SSLError) as exc:
+        raise SyncError(f"Нет доступа к {url}") from exc
+    if _is_blocked_body(data):
+        raise SyncError(
+            "МИРЭА закрыла доступ с этого IP (403). Загрузите Excel файлом."
+        )
+    return data
 
 
 def _schedule_links(html: str, base: str) -> list[str]:
     links = []
     seen = set()
-    for href in HREF_RE.findall(html or ""):
+    for groups in HREF_RE.findall(html or ""):
+        href = next((part for part in groups if part), "")
+        if not href:
+            continue
         url = urllib.parse.urljoin(base, href.replace("&amp;", "&"))
         if url not in seen:
             seen.add(url)
@@ -399,6 +443,169 @@ def _link_score(url: str, group_name: str) -> int:
     return score
 
 
+def _save_temp_workbook(data: bytes, name: str = "schedule.xlsx") -> Path:
+    suffix = ".xlsx" if data[:2] == b"PK" or name.lower().endswith(".xlsx") else ".xls"
+    path = Path(tempfile.mkdtemp(prefix="mirea-sched-")) / f"schedule{suffix}"
+    path.write_bytes(data)
+    return path
+
+
+def _unfold_ical(raw: str) -> list[str]:
+    lines: list[str] = []
+    for line in raw.splitlines():
+        if line.startswith((" ", "\t")) and lines:
+            lines[-1] += line[1:]
+        else:
+            lines.append(line)
+    return lines
+
+
+def _ical_dt(value: str) -> datetime:
+    value = (value or "").split(":")[-1].rstrip("Z")
+    if "T" in value:
+        return datetime.strptime(value[:15], "%Y%m%dT%H%M%S")
+    return datetime.strptime(value[:8], "%Y%m%d")
+
+
+def expand_rrule_dates(start: datetime, rrule: str, until: date) -> list[date]:
+    interval = 1
+    match = re.search(r"INTERVAL=(\d+)", rrule or "")
+    if match:
+        interval = max(1, int(match.group(1)))
+    bound = until
+    match = re.search(r"UNTIL=(\d{8})", rrule or "")
+    if match:
+        bound = min(bound, datetime.strptime(match.group(1), "%Y%m%d").date())
+    days = []
+    day = start.date()
+    if not rrule:
+        return [day] if day <= bound else []
+    while day <= bound:
+        days.append(day)
+        day += timedelta(weeks=interval)
+    return days
+
+
+def parse_ical(text: str, start: date, end: date) -> list[ConcreteLesson]:
+    lessons: list[ConcreteLesson] = []
+    in_event = False
+    fields: dict[str, str] = {}
+    for line in _unfold_ical(text):
+        if line == "BEGIN:VEVENT":
+            in_event = True
+            fields = {}
+            continue
+        if line == "END:VEVENT":
+            in_event = False
+            dt_raw = next((v for k, v in fields.items() if k.startswith("DTSTART")), "")
+            end_raw = next((v for k, v in fields.items() if k.startswith("DTEND")), "")
+            if not dt_raw or not end_raw:
+                continue
+            try:
+                dt_start = _ical_dt(dt_raw)
+                dt_end = _ical_dt(end_raw)
+            except ValueError:
+                continue
+            if dt_start.hour == 0 and dt_end.hour == 0:
+                continue
+            subject = (
+                fields.get("X-META-DISCIPLINE")
+                or fields.get("SUMMARY")
+                or ""
+            ).strip()
+            if subject.lower().startswith(("пр ", "лек ", "лаб ", "сем ")):
+                subject = subject.split(" ", 1)[-1]
+            subject = clean_subject(subject)
+            if not subject:
+                continue
+            rrule = fields.get("RRULE", "")
+            teacher = fields.get("X-META-TEACHER") or ""
+            room = (fields.get("X-META-AUDITORIUM") or fields.get("LOCATION") or "")[:32]
+            lesson_type = map_lesson_type(
+                fields.get("X-META-LESSON_TYPE") or fields.get("SUMMARY") or ""
+            )
+            for day in expand_rrule_dates(dt_start, rrule, end):
+                if day < start:
+                    continue
+                lessons.append(
+                    ConcreteLesson(
+                        date=day,
+                        start=dt_start.time(),
+                        end=dt_end.time(),
+                        subject=subject,
+                        lesson_type=lesson_type,
+                        teacher=short_teacher(teacher),
+                        room=room,
+                    )
+                )
+            continue
+        if in_event and ":" in line:
+            key, value = line.split(":", 1)
+            fields[key] = value.strip()
+            fields[key.split(";", 1)[0]] = value.strip()
+    if not lessons:
+        raise SyncError("В календаре МИРЭА нет пар для выбранного семестра")
+    return lessons
+
+
+def _search_items(payload) -> list:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if not isinstance(payload, dict):
+        return []
+    items = payload.get("data") or payload.get("results") or payload.get("items") or []
+    if isinstance(items, dict):
+        items = items.get("data") or items.get("results") or []
+    if not isinstance(items, list):
+        return []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def fetch_from_schedule_of(group_name: str, start: date, end: date) -> list[ConcreteLesson]:
+    want = normalize_group(group_name)
+    last_error = None
+    for base in SCHEDULE_OF_BASES:
+        search = f"{base}/schedule/api/search?limit=50&match={urllib.parse.quote(group_name)}"
+        try:
+            payload = json.loads(_http_get(search, timeout=15).decode("utf-8", "ignore"))
+        except (SyncError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            last_error = exc
+            continue
+        hit = None
+        for item in _search_items(payload):
+            title = (
+                item.get("targetTitle")
+                or item.get("fullTitle")
+                or item.get("name")
+                or ""
+            )
+            target = item.get("scheduleTarget", 1)
+            if str(target) in {"1", "None"} or target is None:
+                if normalize_group(str(title)) == want:
+                    hit = item
+                    break
+        if hit is None:
+            last_error = SyncError(f"Группа {group_name} не найдена в API расписания")
+            continue
+        group_id = hit.get("id") or hit.get("uid")
+        schedule_target = hit.get("scheduleTarget", 1)
+        ical_url = (
+            hit.get("iCalLink")
+            or hit.get("icalLink")
+            or f"{base}/schedule/api/ical/{schedule_target}/{group_id}?includeMeta=true"
+        )
+        try:
+            raw = _http_get(ical_url, timeout=25).decode("utf-8", "ignore")
+        except SyncError as exc:
+            last_error = exc
+            continue
+        if "BEGIN:VEVENT" not in raw:
+            last_error = SyncError("API расписания не вернуло календарь")
+            continue
+        return parse_ical(raw, start, end)
+    raise last_error or SyncError("Официальный API расписания недоступен")
+
+
 def download_excel_for_group(group_name: str) -> Path:
     local = (getattr(settings, "MIREA_SCHEDULE_FILE", "") or "").strip()
     if local:
@@ -412,33 +619,32 @@ def download_excel_for_group(group_name: str) -> Path:
     candidates: list[str] = []
     if cfg.sync_file_url:
         candidates.append(cfg.sync_file_url)
+    page_error = None
     try:
-        html = _http_get(page_url).decode("utf-8", "ignore")
-    except (urllib.error.URLError, TimeoutError, ssl.SSLError) as exc:
-        raise SyncError(
-            "Не удалось открыть страницу расписания МИРЭА. "
-            "На сервере должна быть сеть до www.mirea.ru."
-        ) from exc
-    links = sorted(_schedule_links(html, page_url), key=lambda u: -_link_score(u, group_name))
-    for url in links:
-        if url not in candidates:
-            candidates.append(url)
+        html = _http_get(page_url, timeout=15).decode("utf-8", "ignore")
+        links = sorted(_schedule_links(html, page_url), key=lambda u: -_link_score(u, group_name))
+        for url in links:
+            if url not in candidates:
+                candidates.append(url)
+    except SyncError as exc:
+        page_error = exc
     if not candidates:
-        raise SyncError("На странице расписания МИРЭА нет ссылок на Excel")
+        raise SyncError(
+            "На странице mirea.ru/schedule больше нет ссылок на Excel "
+            "(расписание перенесли в МАХ). Загрузите файл вручную."
+            + (f" {page_error}" if page_error else "")
+        )
 
     last_error = None
-    tmpdir = Path(tempfile.mkdtemp(prefix="mirea-sched-"))
     for url in candidates[:18]:
         try:
             data = _http_get(url)
-        except (urllib.error.URLError, TimeoutError, ssl.SSLError) as exc:
+        except SyncError as exc:
             last_error = exc
             continue
         if len(data) < 1000:
             continue
-        suffix = ".xlsx" if data[:2] == b"PK" else ".xls"
-        path = tmpdir / f"schedule{suffix}"
-        path.write_bytes(data)
+        path = _save_temp_workbook(data, url)
         try:
             parse_excel(path, group_name)
         except SyncError:
@@ -447,8 +653,8 @@ def download_excel_for_group(group_name: str) -> Path:
         cfg.save(update_fields=["sync_file_url"])
         return path
     raise SyncError(
-        f"Группа {group_name} не найдена в Excel на mirea.ru/schedule. "
-        + (f"({last_error})" if last_error else "")
+        f"Группа {group_name} не найдена в Excel. "
+        + (str(last_error) if last_error else "Загрузите файл вручную.")
     )
 
 
@@ -534,16 +740,52 @@ def apply_sync(group: Group, concrete: list[ConcreteLesson]) -> dict:
     }
 
 
-def sync_journal() -> dict:
+def _collect_concrete(
+    excel_group: str,
+    start: date,
+    end: date,
+    *,
+    file_bytes: bytes | None = None,
+    filename: str = "schedule.xlsx",
+) -> tuple[list[ConcreteLesson], str]:
+    if file_bytes:
+        path = _save_temp_workbook(file_bytes, filename)
+        weekly = parse_excel(path, excel_group)
+        return expand_semester(weekly, start, end), "file"
+    local = (getattr(settings, "MIREA_SCHEDULE_FILE", "") or "").strip()
+    if local:
+        weekly = parse_excel(local, excel_group)
+        return expand_semester(weekly, start, end), "file"
+    errors: list[str] = []
+    try:
+        return fetch_from_schedule_of(excel_group, start, end), "api"
+    except SyncError as exc:
+        errors.append(str(exc))
+    try:
+        path = download_excel_for_group(excel_group)
+        weekly = parse_excel(path, excel_group)
+        return expand_semester(weekly, start, end), "excel"
+    except SyncError as exc:
+        errors.append(str(exc))
+    detail = " ".join(errors).strip()
+    raise SyncError(
+        "Не удалось скачать расписание автоматически. "
+        "На сайте МИРЭА Excel больше не публикуют, а с зарубежного IP сайт часто закрыт. "
+        "Загрузите файл .xlsx кнопкой «Загрузить файл». "
+        + (detail if detail else "")
+    )
+
+
+def sync_journal(file_bytes: bytes | None = None, filename: str = "schedule.xlsx") -> dict:
     group = Group.objects.filter(is_journal=True).first()
     if group is None:
         raise SyncError("Группа журнала не найдена")
     excel_group = resolve_excel_group_name()
-    path = download_excel_for_group(excel_group)
-    weekly = parse_excel(path, excel_group)
     cfg = JournalSettings.get()
     start, end = semester_bounds(cfg)
-    concrete = expand_semester(weekly, start, end)
+    concrete, source = _collect_concrete(
+        excel_group, start, end, file_bytes=file_bytes, filename=filename
+    )
     if not concrete:
         raise SyncError("В пределах семестра нет пар из официального файла")
     stats = apply_sync(group, concrete)
@@ -552,7 +794,8 @@ def sync_journal() -> dict:
     stats["group"] = excel_group
     stats["from"] = start.isoformat()
     stats["to"] = end.isoformat()
-    stats["weekly"] = len(weekly)
+    stats["weekly"] = len(concrete)
+    stats["source"] = source
     return stats
 
 

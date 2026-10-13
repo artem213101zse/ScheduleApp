@@ -106,6 +106,8 @@ class LessonEditorTests(TestCase):
         self.assertIn('id="btnSyncSchedule"', html)
         self.assertIn('id="btnAcceptSync"', html)
         self.assertIn('id="btnCancelSync"', html)
+        self.assertIn('id="btnUploadSync"', html)
+        self.assertIn('id="fSyncFile"', html)
 
     def test_quick_attendance_toggles_mark(self):
         lesson = self._lesson(date(2026, 9, 7), week="Н")
@@ -390,3 +392,109 @@ class ScheduleSyncTests(TestCase):
         ).json()
         self.assertGreater(canceled["deleted"], 0)
         self.assertTrue(Lesson.objects.filter(pk=kept.pk).exists())
+
+    def test_upload_excel_creates_pending(self):
+        import tempfile
+        from pathlib import Path
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        tmp = Path(tempfile.mkdtemp()) / "bsmo.xlsx"
+        _write_mirea_xlsx(tmp)
+        uploaded = SimpleUploadedFile(
+            "bsmo.xlsx",
+            tmp.read_bytes(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        resp = self.client.post("/api/schedule-sync/", data={"action": "upload", "file": uploaded})
+        body = resp.json()
+        self.assertTrue(body.get("ok"), body)
+        self.assertEqual(body.get("source"), "file")
+        self.assertGreater(body["pending"], 0)
+        self.assertTrue(
+            Lesson.objects.filter(source="sync", accepted=False, date=date(2026, 9, 14)).exists()
+        )
+
+    def test_ical_expands_weekly_interval(self):
+        from datetime import date as d
+        from datetime import time as t
+
+        from journal.mirea_sync import parse_ical
+
+        raw = "\n".join([
+            "BEGIN:VCALENDAR",
+            "BEGIN:VEVENT",
+            "DTSTART:20260914T180000",
+            "DTEND:20260914T193000",
+            "RRULE:FREQ=WEEKLY;INTERVAL=2;UNTIL=20260928T235959",
+            "SUMMARY:пр Облачные технологии",
+            "X-META-DISCIPLINE:Облачные технологии",
+            "X-META-LESSON_TYPE:пр",
+            "X-META-TEACHER:Лебедев Александр Сергеевич",
+            "X-META-AUDITORIUM:А-402",
+            "END:VEVENT",
+            "END:VCALENDAR",
+        ])
+        lessons = parse_ical(raw, d(2026, 9, 1), d(2026, 9, 21))
+        self.assertEqual(len(lessons), 1)
+        self.assertEqual(lessons[0].date, d(2026, 9, 14))
+        self.assertEqual(lessons[0].start, t(18, 0))
+        self.assertEqual(lessons[0].subject, "Облачные технологии")
+        self.assertEqual(lessons[0].lesson_type, "ПР")
+
+    def test_fetch_from_schedule_of_uses_ical(self):
+        import json
+        from datetime import date as d
+        from unittest.mock import patch
+
+        from journal.mirea_sync import fetch_from_schedule_of
+
+        search = json.dumps(
+            {
+                "data": [
+                    {"id": 42, "targetTitle": "БСМО-31-25", "scheduleTarget": 1},
+                ]
+            }
+        ).encode()
+        ical = "\n".join(
+            [
+                "BEGIN:VCALENDAR",
+                "BEGIN:VEVENT",
+                "DTSTART;TZID=Europe/Moscow:20260914T180000",
+                "DTEND;TZID=Europe/Moscow:20260914T193000",
+                "RRULE:FREQ=WEEKLY;INTERVAL=2;UNTIL=20260928T235959",
+                "SUMMARY:пр Облачные технологии",
+                "X-META-DISCIPLINE:Облачные технологии",
+                "X-META-LESSON_TYPE:пр",
+                "X-META-TEACHER:Лебедев Александр Сергеевич",
+                "X-META-AUDITORIUM:А-402",
+                "END:VEVENT",
+                "END:VCALENDAR",
+            ]
+        ).encode()
+
+        def fake_get(url, timeout=25):
+            if "/search" in url:
+                return search
+            if "/ical/" in url:
+                return ical
+            raise AssertionError(url)
+
+        with patch("journal.mirea_sync._http_get", side_effect=fake_get):
+            lessons = fetch_from_schedule_of("БСМО-31-25", d(2026, 9, 1), d(2026, 9, 21))
+        self.assertEqual(len(lessons), 1)
+        self.assertEqual(lessons[0].subject, "Облачные технологии")
+        self.assertEqual(lessons[0].date, d(2026, 9, 14))
+
+    def test_auto_sync_asks_for_upload_when_blocked(self):
+        from unittest.mock import patch
+
+        from journal.mirea_sync import SyncError, sync_journal
+
+        with patch(
+            "journal.mirea_sync._http_get",
+            side_effect=SyncError("МИРЭА закрыла доступ с этого IP (403)."),
+        ):
+            with self.assertRaises(SyncError) as ctx:
+                sync_journal()
+        self.assertIn("Загрузите файл", str(ctx.exception))

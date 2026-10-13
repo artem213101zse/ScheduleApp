@@ -1069,23 +1069,46 @@ const MONTHS = ["Январь","Февраль","Март","Апрель","Ма�
         if (el) el.textContent = text || "";
     }
 
+    function applySyncResult(d) {
+        if (!d.ok) {
+            syncStatus(d.error || "Не удалось синхронизировать");
+            return;
+        }
+        pendingCount = Number(d.pending || 0);
+        setSyncUi();
+        var msg = "Черновиков: " + pendingCount;
+        if (d.skipped_manual) msg += ", свои пары не тронуты: " + d.skipped_manual;
+        if (d.group) msg += " (" + d.group + ")";
+        if (d.source === "file") msg += ", из файла";
+        else if (d.source === "api") msg += ", из API МИРЭА";
+        syncStatus(msg);
+        refreshJournal();
+    }
+
     document.getElementById("btnSyncSchedule").addEventListener("click", function () {
         syncStatus("Загружаю официальное расписание…");
-        apiJson("/api/schedule-sync/", { action: "sync" }).then(function (d) {
-            if (!d.ok) {
-                syncStatus(d.error || "Не удалось синхронизировать");
-                return;
-            }
-            pendingCount = Number(d.pending || 0);
-            setSyncUi();
-            var msg = "Черновиков: " + pendingCount;
-            if (d.skipped_manual) msg += ", свои пары не тронуты: " + d.skipped_manual;
-            if (d.group) msg += " (" + d.group + ")";
-            syncStatus(msg);
-            refreshJournal();
-        }).catch(function () {
-            syncStatus("Сеть недоступна, попробуйте ещё раз");
+        apiJson("/api/schedule-sync/", { action: "sync" }).then(applySyncResult).catch(function () {
+            syncStatus("Сеть недоступна. Загрузите Excel файлом.");
         });
+    });
+
+    document.getElementById("btnUploadSync").addEventListener("click", function () {
+        var input = document.getElementById("fSyncFile");
+        if (!input || !input.files || !input.files[0]) {
+            syncStatus("Выберите файл .xlsx");
+            return;
+        }
+        syncStatus("Читаю файл…");
+        var body = new FormData();
+        body.append("action", "upload");
+        body.append("file", input.files[0]);
+        fetch("/api/schedule-sync/", {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken() },
+            body: body
+        }).then(function (r) { return r.json().then(function (d) { d.status = r.status; return d; }); })
+            .then(applySyncResult)
+            .catch(function () { syncStatus("Не удалось загрузить файл"); });
     });
 
     document.getElementById("btnAcceptSync").addEventListener("click", function () {

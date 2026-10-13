@@ -54,9 +54,12 @@
                 <p class="copy-status" id="autoAttendStatus"></p>
                 <button type="button" class="edit-add" id="btnAddLesson">+ Добавить пару</button>
                 <button type="button" class="edit-add edit-sync" id="btnSyncSchedule">Синхронизировать расписание</button>
+                <label class="login-label" for="fSyncFile">Или Excel с mirea.ru / из МАХ (.xlsx)</label>
+                <input class="login-input" id="fSyncFile" type="file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                <button type="button" class="edit-add edit-sync" id="btnUploadSync">Загрузить файл</button>
                 <button type="button" class="edit-add edit-sync-accept" id="btnAcceptSync">Добавить синхронизированные пары</button>
                 <button type="button" class="edit-add edit-sync-cancel" id="btnCancelSync">Отменить синхронизацию</button>
-                <p class="copy-hint">Серые карточки — официальные пары, ещё не в журнале. Зелёные — добавленные вручную. Цвета только в редакторе.</p>
+                <p class="copy-hint">Серые карточки — официальные пары, ещё не в журнале. Зелёные — добавленные вручную. Цвета только в редакторе. С нидерландского сервера МИРЭА закрыт (403), а на сайте больше нет Excel — возьмите файл из МАХ или с mirea.ru/schedule и нажмите «Загрузить файл».</p>
                 <p class="copy-status" id="syncStatus"></p>
                 <button type="button" class="edit-add edit-copy-week" id="btnCopyWeekToggle">Копировать неделю</button>
                 <div id="copyWeekBox" class="copy-box">

@@ -558,7 +558,18 @@ def api_schedule_sync(request):
             return JsonResponse(
                 {"ok": True, "action": "accept", "accepted": accepted, "pending": pending}
             )
-        stats = sync_journal()
+        uploaded = request.FILES.get("file")
+        if action == "upload" or uploaded:
+            if not uploaded:
+                return JsonResponse({"ok": False, "error": "Выберите файл Excel"}, status=400)
+            if uploaded.size > 8 * 1024 * 1024:
+                return JsonResponse({"ok": False, "error": "Файл больше 8 МБ"}, status=400)
+            stats = sync_journal(
+                file_bytes=uploaded.read(),
+                filename=uploaded.name or "schedule.xlsx",
+            )
+        else:
+            stats = sync_journal()
         stats["ok"] = True
         stats["action"] = "sync"
         return JsonResponse(stats)
